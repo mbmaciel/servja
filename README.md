@@ -15,7 +15,7 @@ Aplicação React + Vite com backend próprio em Node/Express e persistência em
 npm install
 ```
 
-2. Configure variáveis em `.env.local` (já há um exemplo pronto no repositório):
+2. Configure variáveis em `.env.local` para desenvolvimento local:
 
 ```env
 PORT=3001
@@ -27,6 +27,8 @@ DB_NAME=servija
 JWT_SECRET=servija-local-jwt-secret-change-me
 JWT_EXPIRES_IN=7d
 ```
+
+Em produção, defina essas variáveis no ambiente do servidor (não em `.env.local`).
 
 3. Garanta que o MySQL esteja ativo.
 

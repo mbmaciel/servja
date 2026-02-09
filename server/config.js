@@ -1,7 +1,11 @@
 import dotenv from 'dotenv';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (!isProduction) {
+  dotenv.config({ path: '.env.local' });
+}
 dotenv.config();
-dotenv.config({ path: '.env.local', override: true });
 
 const toNumber = (value, fallback) => {
   const parsed = Number(value);
