@@ -1,0 +1,66 @@
+{
+  "name": "Solicitacao",
+  "type": "object",
+  "properties": {
+    "cliente_id": {
+      "type": "string",
+      "description": "ID do cliente"
+    },
+    "cliente_email": {
+      "type": "string",
+      "description": "Email do cliente"
+    },
+    "cliente_nome": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "prestador_id": {
+      "type": "string",
+      "description": "ID do prestador"
+    },
+    "prestador_email": {
+      "type": "string",
+      "description": "Email do prestador"
+    },
+    "prestador_nome": {
+      "type": "string",
+      "description": "Nome do prestador"
+    },
+    "categoria_nome": {
+      "type": "string",
+      "description": "Nome da categoria do servi\u00e7o"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do servi\u00e7o solicitado"
+    },
+    "preco_proposto": {
+      "type": "number",
+      "description": "Pre\u00e7o proposto pelo cliente"
+    },
+    "preco_acordado": {
+      "type": "number",
+      "description": "Pre\u00e7o final acordado"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "aberto",
+        "aceito",
+        "concluido",
+        "cancelado"
+      ],
+      "default": "aberto",
+      "description": "Status da solicita\u00e7\u00e3o"
+    },
+    "resposta_prestador": {
+      "type": "string",
+      "description": "Resposta ou contraproposta do prestador"
+    }
+  },
+  "required": [
+    "cliente_email",
+    "prestador_id",
+    "descricao"
+  ]
+}

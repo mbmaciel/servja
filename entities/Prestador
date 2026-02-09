@@ -1,0 +1,171 @@
+{
+  "name": "Prestador",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio prestador"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome do prestador"
+    },
+    "cpf": {
+      "type": "string",
+      "description": "CPF do prestador"
+    },
+    "data_nascimento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de nascimento"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone / WhatsApp"
+    },
+    "nome_empresa": {
+      "type": "string",
+      "description": "Nome da empresa (opcional)"
+    },
+    "cnpj": {
+      "type": "string",
+      "description": "CNPJ da empresa (opcional)"
+    },
+    "tipo_empresa": {
+      "type": "string",
+      "enum": [
+        "MEI",
+        "LTDA",
+        "Aut\u00f4nomo",
+        "Outro"
+      ],
+      "description": "Tipo de empresa"
+    },
+    "categoria_id": {
+      "type": "string",
+      "description": "ID da categoria"
+    },
+    "categoria_nome": {
+      "type": "string",
+      "description": "Nome da categoria"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o dos servi\u00e7os"
+    },
+    "valor_hora": {
+      "type": "number",
+      "description": "Valor m\u00e9dio por hora trabalhada"
+    },
+    "preco_base": {
+      "type": "number",
+      "description": "Valor m\u00ednimo por servi\u00e7o"
+    },
+    "tempo_medio_atendimento": {
+      "type": "string",
+      "description": "Tempo m\u00e9dio de atendimento"
+    },
+    "dias_disponiveis": {
+      "type": "string",
+      "description": "Dias dispon\u00edveis para atendimento"
+    },
+    "horarios_disponiveis": {
+      "type": "string",
+      "description": "Hor\u00e1rios dispon\u00edveis"
+    },
+    "rua": {
+      "type": "string",
+      "description": "Rua do endere\u00e7o"
+    },
+    "numero": {
+      "type": "string",
+      "description": "N\u00famero do endere\u00e7o"
+    },
+    "bairro": {
+      "type": "string",
+      "description": "Bairro"
+    },
+    "cidade": {
+      "type": "string",
+      "description": "Cidade do prestador"
+    },
+    "estado": {
+      "type": "string",
+      "description": "Estado (UF)"
+    },
+    "cep": {
+      "type": "string",
+      "description": "CEP"
+    },
+    "raio_atendimento": {
+      "type": "number",
+      "description": "Raio de atendimento em km"
+    },
+    "foto": {
+      "type": "string",
+      "description": "URL da foto de perfil"
+    },
+    "foto_facial": {
+      "type": "string",
+      "description": "URL da foto facial (selfie)"
+    },
+    "foto_documento": {
+      "type": "string",
+      "description": "URL da foto do documento"
+    },
+    "logo_empresa": {
+      "type": "string",
+      "description": "URL do logo da empresa"
+    },
+    "fotos_trabalhos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs das fotos de trabalhos realizados"
+    },
+    "avaliacao": {
+      "type": "number",
+      "default": 5,
+      "description": "Avalia\u00e7\u00e3o m\u00e9dia"
+    },
+    "destaque": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se \u00e9 prestador em destaque"
+    },
+    "status_aprovacao": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aprovado",
+        "reprovado"
+      ],
+      "default": "pendente",
+      "description": "Status de aprova\u00e7\u00e3o pelo admin"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se est\u00e1 ativo"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "Latitude da localiza\u00e7\u00e3o"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude da localiza\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "user_email",
+    "nome",
+    "categoria_id",
+    "telefone"
+  ]
+}
