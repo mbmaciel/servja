@@ -122,6 +122,7 @@ app.post(
     const cpfValue = String(cpf || '').trim();
     const cnpjValue = String(cnpj || '').trim();
     const nomeEmpresaValue = String(nome_empresa || '').trim();
+    const ativoValue = normalizedTipo === 'prestador' ? false : true;
 
     if (normalizedTipo === 'cliente') {
       if (!cpfValue) {
@@ -165,7 +166,7 @@ app.post(
           normalizedTipo === 'cliente' ? cpfValue : null,
           normalizedTipo === 'prestador' ? cnpjValue : null,
           normalizedTipo === 'prestador' ? nomeEmpresaValue : null,
-          true,
+          ativoValue,
         ]
       );
     } catch (error) {
@@ -178,7 +179,7 @@ app.post(
 
     const userRow = await getUserById(userId);
     const user = toPublicUser(userRow);
-    const token = createAuthToken(user);
+    const token = ativoValue ? createAuthToken(user) : null;
 
     return res.status(201).json({ user, token });
   })
@@ -310,14 +311,11 @@ app.patch(
   asyncHandler(async (req, res) => {
     const id = req.params.id;
     const payload = req.body ?? {};
+    const hasAtivo = Object.prototype.hasOwnProperty.call(payload, 'ativo');
+    const hasTipo = Object.prototype.hasOwnProperty.call(payload, 'tipo');
 
-    if (!Object.prototype.hasOwnProperty.call(payload, 'ativo')) {
+    if (!hasAtivo && !hasTipo) {
       return res.status(400).json({ message: 'Nenhum campo válido para atualizar.' });
-    }
-
-    const ativo = parseBoolean(payload.ativo);
-    if (typeof ativo !== 'boolean') {
-      return res.status(400).json({ message: 'Campo "ativo" inválido.' });
     }
 
     const pool = getPool();
@@ -328,16 +326,55 @@ app.patch(
       return res.status(404).json({ message: 'Usuário não encontrado.' });
     }
 
-    if (existing.tipo !== 'prestador') {
-      return res.status(400).json({ message: 'Apenas prestadores podem ter status ativo/inativo.' });
+    const updates = [];
+    const values = [];
+
+    if (hasTipo) {
+      const nextTipo = String(payload.tipo);
+      const validTipos = ['cliente', 'admin'];
+      const sourceTipos = ['cliente', 'admin'];
+
+      if (!validTipos.includes(nextTipo)) {
+        return res.status(400).json({ message: 'Conversão de tipo inválida.' });
+      }
+
+      if (!sourceTipos.includes(existing.tipo)) {
+        return res.status(400).json({ message: 'Apenas clientes e admins podem ter tipo alterado.' });
+      }
+
+      updates.push('tipo = ?');
+      values.push(nextTipo);
     }
 
-    await pool.query('UPDATE users SET ativo = ? WHERE id = ?', [ativo, id]);
-    await pool.query('UPDATE prestadores SET ativo = ? WHERE user_id = ? OR user_email = ?', [
-      ativo,
-      id,
-      existing.email,
-    ]);
+    let ativo = null;
+    if (hasAtivo) {
+      ativo = parseBoolean(payload.ativo);
+      if (typeof ativo !== 'boolean') {
+        return res.status(400).json({ message: 'Campo "ativo" inválido.' });
+      }
+
+      if (existing.tipo !== 'prestador') {
+        return res.status(400).json({ message: 'Apenas prestadores podem ter status ativo/inativo.' });
+      }
+
+      updates.push('ativo = ?');
+      values.push(ativo);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'Nenhum campo válido para atualizar.' });
+    }
+
+    values.push(id);
+    await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+
+    if (hasAtivo) {
+      await pool.query('UPDATE prestadores SET ativo = ? WHERE user_id = ? OR user_email = ?', [
+        ativo,
+        id,
+        existing.email,
+      ]);
+    }
 
     const updatedUserRow = await getUserById(id);
     return res.json({ item: toPublicUser(updatedUserRow) });

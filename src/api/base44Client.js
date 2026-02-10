@@ -75,7 +75,11 @@ const auth = {
       body: JSON.stringify(payload),
     });
 
-    tokenStorage.set(response.token);
+    if (response?.token) {
+      tokenStorage.set(response.token);
+    } else {
+      tokenStorage.clear();
+    }
     return response.user;
   },
   async me() {

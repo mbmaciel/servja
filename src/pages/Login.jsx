@@ -108,7 +108,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await base44.auth.register({
+      const createdUser = await base44.auth.register({
         full_name: registerForm.full_name,
         email: registerForm.email,
         password: registerForm.password,
@@ -117,7 +117,12 @@ export default function Login() {
         cnpj: tipo === 'prestador' ? registerForm.cnpj : null,
         nome_empresa: tipo === 'prestador' ? registerForm.nome_empresa.trim() : null,
       });
-      toast.success('Conta criada com sucesso.');
+
+      if (createdUser?.tipo === 'prestador' && createdUser?.ativo === false) {
+        toast.success('Conta de prestador criada. Aguarde ativação do administrador.');
+      } else {
+        toast.success('Conta criada com sucesso.');
+      }
       navigate(redirectTo, { replace: true });
     } catch (error) {
       toast.error(error.message || 'Não foi possível criar a conta.');

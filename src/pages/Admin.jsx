@@ -89,8 +89,37 @@ export default function Admin() {
         base44.entities.Solicitacao.list('-created_date')
       ]);
 
+      const prestadorProfileByUserId = new Map(
+        prestadoresData.filter((item) => item.user_id).map((item) => [item.user_id, item])
+      );
+      const prestadorProfileByEmail = new Map(
+        prestadoresData.filter((item) => item.user_email).map((item) => [item.user_email, item])
+      );
+
+      const prestadoresReais = usersData
+        .filter((item) => (item.tipo || item.role) === 'prestador')
+        .map((item) => {
+          const perfil =
+            prestadorProfileByUserId.get(item.id) ||
+            prestadorProfileByEmail.get(item.email) ||
+            null;
+
+          return {
+            id: item.id,
+            user_id: item.id,
+            user_email: item.email,
+            nome: perfil?.nome || item.full_name,
+            categoria_nome: perfil?.categoria_nome || null,
+            cidade: perfil?.cidade || item.cidade || null,
+            preco_base: perfil?.preco_base ?? null,
+            destaque: Boolean(perfil?.destaque),
+            ativo: typeof item.ativo === 'boolean' ? item.ativo : Boolean(perfil?.ativo),
+            perfil_id: perfil?.id || null,
+          };
+        });
+
       setUsers(usersData);
-      setPrestadores(prestadoresData);
+      setPrestadores(prestadoresReais);
       setCategorias(categoriasData);
       setSolicitacoes(solicitacoesData);
     } catch (error) {
@@ -104,7 +133,7 @@ export default function Admin() {
   const handleTogglePrestadorAtivo = async (prestador) => {
     setIsUpdating(true);
     try {
-      await base44.entities.Prestador.update(prestador.id, {
+      await base44.entities.User.update(prestador.user_id, {
         ativo: !prestador.ativo
       });
       toast.success(`Prestador ${prestador.ativo ? 'desativado' : 'ativado'}`);
@@ -117,34 +146,20 @@ export default function Admin() {
   };
 
   const handleTogglePrestadorDestaque = async (prestador) => {
+    if (!prestador.perfil_id) {
+      toast.error('Este prestador ainda não criou perfil profissional.');
+      return;
+    }
+
     setIsUpdating(true);
     try {
-      await base44.entities.Prestador.update(prestador.id, {
+      await base44.entities.Prestador.update(prestador.perfil_id, {
         destaque: !prestador.destaque
       });
       toast.success(`Prestador ${prestador.destaque ? 'removido do' : 'adicionado ao'} destaque`);
       loadData();
     } catch (error) {
       toast.error('Erro ao atualizar prestador');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleToggleUserAtivo = async (targetUser) => {
-    if (targetUser.tipo !== 'prestador') {
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      await base44.entities.User.update(targetUser.id, {
-        ativo: !targetUser.ativo,
-      });
-      toast.success(`Prestador ${targetUser.ativo ? 'desativado' : 'ativado'}`);
-      loadData();
-    } catch (error) {
-      toast.error(error.message || 'Erro ao atualizar status do prestador');
     } finally {
       setIsUpdating(false);
     }
@@ -201,14 +216,51 @@ export default function Admin() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleChangeUserType = async (targetUser, nextTipo) => {
+    setIsUpdating(true);
+    try {
+      await base44.entities.User.update(targetUser.id, { tipo: nextTipo });
+      toast.success(
+        nextTipo === 'admin'
+          ? 'Usuário convertido para administrador.'
+          : 'Administrador convertido para cliente.'
+      );
+      loadData();
+    } catch (error) {
+      toast.error(error.message || 'Erro ao atualizar perfil do usuário');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const getUserProfile = (targetUser) => {
+    if (targetUser?.tipo) {
+      return targetUser.tipo;
+    }
+
+    if (targetUser?.role === 'admin') {
+      return 'admin';
+    }
+
+    return 'cliente';
+  };
+
+  const matchesSearch = (targetUser) =>
+    targetUser.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    targetUser.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+  const filteredClientes = users.filter(
+    (targetUser) => getUserProfile(targetUser) === 'cliente' && matchesSearch(targetUser)
+  );
+
+  const filteredAdmins = users.filter(
+    (targetUser) => getUserProfile(targetUser) === 'admin' && matchesSearch(targetUser)
   );
 
   const filteredPrestadores = prestadores.filter(p =>
     p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.categoria_nome?.toLowerCase().includes(searchTerm.toLowerCase())
+    p.categoria_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.user_email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
@@ -442,6 +494,10 @@ export default function Admin() {
               <Users className="w-4 h-4 mr-2" />
               Usuários
             </TabsTrigger>
+            <TabsTrigger value="administradores">
+              <Shield className="w-4 h-4 mr-2" />
+              Administradores
+            </TabsTrigger>
             <TabsTrigger value="categorias">
               <Tag className="w-4 h-4 mr-2" />
               Categorias
@@ -471,18 +527,22 @@ export default function Admin() {
                     </TableHeader>
                     <TableBody>
                       {filteredPrestadores.map((prestador) => (
-                        <TableRow key={prestador.id}>
+                        <TableRow key={prestador.user_id || prestador.id}>
                           <TableCell className="font-medium">{prestador.nome}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{prestador.categoria_nome}</Badge>
+                            <Badge variant="secondary">{prestador.categoria_nome || '-'}</Badge>
                           </TableCell>
                           <TableCell>{prestador.cidade || '-'}</TableCell>
-                          <TableCell>R$ {prestador.preco_base?.toFixed(2) || '0.00'}</TableCell>
+                          <TableCell>
+                            {typeof prestador.preco_base === 'number'
+                              ? `R$ ${prestador.preco_base.toFixed(2)}`
+                              : '-'}
+                          </TableCell>
                           <TableCell>
                             <Switch
                               checked={prestador.destaque}
                               onCheckedChange={() => handleTogglePrestadorDestaque(prestador)}
-                              disabled={isUpdating}
+                              disabled={isUpdating || !prestador.perfil_id}
                             />
                           </TableCell>
                           <TableCell>
@@ -581,7 +641,7 @@ export default function Admin() {
             <Card>
               <CardHeader>
                 <CardTitle>Usuários</CardTitle>
-                <CardDescription>Lista de todos os usuários cadastrados</CardDescription>
+                <CardDescription>Lista de usuários com perfil cliente</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -590,55 +650,72 @@ export default function Admin() {
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Tipo</TableHead>
                         <TableHead>Cidade</TableHead>
-                        <TableHead>Ativo</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUsers.map((u) => (
+                      {filteredClientes.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.full_name}</TableCell>
+                          <TableCell>{u.email}</TableCell>
+                          <TableCell>{u.cidade || '-'}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleChangeUserType(u, 'admin')}
+                              disabled={isUpdating}
+                            >
+                              <Shield className="w-4 h-4 text-purple-600" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Administradores */}
+          <TabsContent value="administradores">
+            <Card>
+              <CardHeader>
+                <CardTitle>Administradores</CardTitle>
+                <CardDescription>Lista de usuários com perfil administrador</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Perfil</TableHead>
+                        <TableHead>Cidade</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAdmins.map((u) => (
                         <TableRow key={u.id}>
                           <TableCell className="font-medium">{u.full_name}</TableCell>
                           <TableCell>{u.email}</TableCell>
                           <TableCell>
-                            <Badge className={`
-                              ${u.tipo === 'admin' || u.role === 'admin' ? 'bg-purple-100 text-purple-800' : ''}
-                              ${u.tipo === 'prestador' ? 'bg-green-100 text-green-800' : ''}
-                              ${u.tipo === 'cliente' || (!u.tipo && u.role !== 'admin') ? 'bg-blue-100 text-blue-800' : ''}
-                            `}>
-                              {u.tipo || u.role || 'cliente'}
-                            </Badge>
+                            <Badge className="bg-purple-100 text-purple-800">admin</Badge>
                           </TableCell>
                           <TableCell>{u.cidade || '-'}</TableCell>
                           <TableCell>
-                            {u.tipo === 'prestador' ? (
-                              u.ativo ? (
-                                <Badge className="bg-green-100 text-green-800">Ativo</Badge>
-                              ) : (
-                                <Badge className="bg-red-100 text-red-800">Inativo</Badge>
-                              )
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {u.tipo === 'prestador' ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleToggleUserAtivo(u)}
-                                disabled={isUpdating}
-                              >
-                                {u.ativo ? (
-                                  <XCircle className="w-4 h-4 text-red-500" />
-                                ) : (
-                                  <CheckCircle className="w-4 h-4 text-green-500" />
-                                )}
-                              </Button>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleChangeUserType(u, 'cliente')}
+                              disabled={isUpdating}
+                            >
+                              <Users className="w-4 h-4 text-blue-600" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
