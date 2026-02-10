@@ -13,6 +13,7 @@ const createTablesSql = [
     tipo ENUM('cliente', 'prestador', 'admin') NOT NULL DEFAULT 'cliente',
     telefone VARCHAR(30) NULL,
     cpf VARCHAR(20) NULL,
+    cnpj VARCHAR(20) NULL,
     data_nascimento DATE NULL,
     rua VARCHAR(150) NULL,
     numero VARCHAR(20) NULL,
@@ -155,6 +156,14 @@ export const initializeDatabase = async () => {
 
     for (const sql of createTablesSql) {
       await connection.query(sql);
+    }
+
+    try {
+      await connection.query('ALTER TABLE users ADD COLUMN cnpj VARCHAR(20) NULL AFTER cpf');
+    } catch (error) {
+      if (error?.code !== 'ER_DUP_FIELDNAME') {
+        throw error;
+      }
     }
   } finally {
     await connection.end();

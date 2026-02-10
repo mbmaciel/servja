@@ -21,6 +21,8 @@ const parseBoolean = (value) => {
   return undefined;
 };
 
+const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+
 const buildSortClause = (sortValue, allowedFields, fallbackField = 'created_date') => {
   const raw = typeof sortValue === 'string' && sortValue.length > 0 ? sortValue : `-${fallbackField}`;
   const descending = raw.startsWith('-');
@@ -95,10 +97,37 @@ app.get('/api/health', (_req, res) => {
 app.post(
   '/api/auth/register',
   asyncHandler(async (req, res) => {
-    const { full_name, email, password } = req.body ?? {};
+    const { full_name, email, password, tipo, cpf, cnpj } = req.body ?? {};
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
+    }
+
+    const allowedTipos = ['cliente', 'prestador'];
+    if (tipo !== undefined && !allowedTipos.includes(String(tipo))) {
+      return res.status(400).json({ message: 'Tipo de conta inválido.' });
+    }
+
+    const normalizedTipo = tipo === 'prestador' ? 'prestador' : 'cliente';
+    const cpfValue = String(cpf || '').trim();
+    const cnpjValue = String(cnpj || '').trim();
+
+    if (normalizedTipo === 'cliente') {
+      if (!cpfValue) {
+        return res.status(400).json({ message: 'CPF é obrigatório para cliente.' });
+      }
+      if (onlyDigits(cpfValue).length !== 11) {
+        return res.status(400).json({ message: 'CPF inválido.' });
+      }
+    }
+
+    if (normalizedTipo === 'prestador') {
+      if (!cnpjValue) {
+        return res.status(400).json({ message: 'CNPJ é obrigatório para prestador.' });
+      }
+      if (onlyDigits(cnpjValue).length !== 14) {
+        return res.status(400).json({ message: 'CNPJ inválido.' });
+      }
     }
 
     if (String(password).length < 6) {
@@ -111,9 +140,17 @@ app.post(
 
     try {
       await pool.query(
-        `INSERT INTO users (id, full_name, email, password_hash, tipo)
-         VALUES (?, ?, ?, ?, 'cliente')`,
-        [userId, String(full_name).trim(), String(email).trim().toLowerCase(), passwordHash]
+        `INSERT INTO users (id, full_name, email, password_hash, tipo, cpf, cnpj)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          String(full_name).trim(),
+          String(email).trim().toLowerCase(),
+          passwordHash,
+          normalizedTipo,
+          normalizedTipo === 'cliente' ? cpfValue : null,
+          normalizedTipo === 'prestador' ? cnpjValue : null,
+        ]
       );
     } catch (error) {
       if (error?.code === 'ER_DUP_ENTRY') {
@@ -181,6 +218,7 @@ app.patch(
     const allowedFields = [
       'telefone',
       'cpf',
+      'cnpj',
       'data_nascimento',
       'rua',
       'numero',

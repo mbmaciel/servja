@@ -64,10 +64,15 @@ const auth = {
     tokenStorage.set(response.token);
     return response.user;
   },
-  async register(full_name, email, password) {
+  async register(full_nameOrPayload, email, password) {
+    const payload =
+      typeof full_nameOrPayload === 'object' && full_nameOrPayload !== null
+        ? full_nameOrPayload
+        : { full_name: full_nameOrPayload, email, password };
+
     const response = await apiRequest('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ full_name, email, password }),
+      body: JSON.stringify(payload),
     });
 
     tokenStorage.set(response.token);

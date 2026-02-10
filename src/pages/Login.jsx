@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -36,6 +43,8 @@ const getRedirectTarget = (search) => {
   }
 };
 
+const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+
 export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,6 +56,9 @@ export default function Login() {
     full_name: '',
     email: '',
     password: '',
+    tipo: 'cliente',
+    cpf: '',
+    cnpj: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -68,19 +80,36 @@ export default function Login() {
   const handleRegister = async (event) => {
     event.preventDefault();
 
+    const tipo = registerForm.tipo === 'prestador' ? 'prestador' : 'cliente';
+    const cpfDigits = onlyDigits(registerForm.cpf);
+    const cnpjDigits = onlyDigits(registerForm.cnpj);
+
     if (registerForm.password.length < 6) {
       toast.error('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (tipo === 'cliente' && cpfDigits.length !== 11) {
+      toast.error('Informe um CPF válido para cliente.');
+      return;
+    }
+
+    if (tipo === 'prestador' && cnpjDigits.length !== 14) {
+      toast.error('Informe um CNPJ válido para prestador.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await base44.auth.register(
-        registerForm.full_name,
-        registerForm.email,
-        registerForm.password
-      );
+      await base44.auth.register({
+        full_name: registerForm.full_name,
+        email: registerForm.email,
+        password: registerForm.password,
+        tipo,
+        cpf: tipo === 'cliente' ? registerForm.cpf : null,
+        cnpj: tipo === 'prestador' ? registerForm.cnpj : null,
+      });
       toast.success('Conta criada com sucesso.');
       navigate(redirectTo, { replace: true });
     } catch (error) {
@@ -167,6 +196,55 @@ export default function Login() {
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Tipo de conta</Label>
+                  <Select
+                    value={registerForm.tipo}
+                    onValueChange={(value) =>
+                      setRegisterForm((prev) => ({
+                        ...prev,
+                        tipo: value,
+                        cpf: value === 'cliente' ? prev.cpf : '',
+                        cnpj: value === 'prestador' ? prev.cnpj : '',
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cliente">Cliente</SelectItem>
+                      <SelectItem value="prestador">Prestador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {registerForm.tipo === 'cliente' ? (
+                  <div className="space-y-2">
+                    <Label>CPF</Label>
+                    <Input
+                      value={registerForm.cpf}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, cpf: event.target.value }))
+                      }
+                      placeholder="000.000.000-00"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>CNPJ</Label>
+                    <Input
+                      value={registerForm.cnpj}
+                      onChange={(event) =>
+                        setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
+                      }
+                      placeholder="00.000.000/0000-00"
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Senha</Label>
