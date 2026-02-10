@@ -14,6 +14,8 @@ const createTablesSql = [
     telefone VARCHAR(30) NULL,
     cpf VARCHAR(20) NULL,
     cnpj VARCHAR(20) NULL,
+    nome_empresa VARCHAR(150) NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
     data_nascimento DATE NULL,
     rua VARCHAR(150) NULL,
     numero VARCHAR(20) NULL,
@@ -160,6 +162,22 @@ export const initializeDatabase = async () => {
 
     try {
       await connection.query('ALTER TABLE users ADD COLUMN cnpj VARCHAR(20) NULL AFTER cpf');
+    } catch (error) {
+      if (error?.code !== 'ER_DUP_FIELDNAME') {
+        throw error;
+      }
+    }
+
+    try {
+      await connection.query('ALTER TABLE users ADD COLUMN nome_empresa VARCHAR(150) NULL AFTER cnpj');
+    } catch (error) {
+      if (error?.code !== 'ER_DUP_FIELDNAME') {
+        throw error;
+      }
+    }
+
+    try {
+      await connection.query('ALTER TABLE users ADD COLUMN ativo BOOLEAN NOT NULL DEFAULT TRUE AFTER nome_empresa');
     } catch (error) {
       if (error?.code !== 'ER_DUP_FIELDNAME') {
         throw error;

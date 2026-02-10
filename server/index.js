@@ -65,6 +65,16 @@ app.use(
     try {
       const payload = verifyAuthToken(token);
       const userRow = await getUserById(payload.sub);
+      const prestadorInativo =
+        userRow &&
+        userRow.tipo === 'prestador' &&
+        !(userRow.ativo === true || userRow.ativo === 1);
+
+      if (prestadorInativo) {
+        req.currentUser = null;
+        return next();
+      }
+
       req.currentUser = toPublicUser(userRow);
     } catch {
       req.currentUser = null;
@@ -97,7 +107,7 @@ app.get('/api/health', (_req, res) => {
 app.post(
   '/api/auth/register',
   asyncHandler(async (req, res) => {
-    const { full_name, email, password, tipo, cpf, cnpj } = req.body ?? {};
+    const { full_name, email, password, tipo, cpf, cnpj, nome_empresa } = req.body ?? {};
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
@@ -111,6 +121,7 @@ app.post(
     const normalizedTipo = tipo === 'prestador' ? 'prestador' : 'cliente';
     const cpfValue = String(cpf || '').trim();
     const cnpjValue = String(cnpj || '').trim();
+    const nomeEmpresaValue = String(nome_empresa || '').trim();
 
     if (normalizedTipo === 'cliente') {
       if (!cpfValue) {
@@ -128,6 +139,9 @@ app.post(
       if (onlyDigits(cnpjValue).length !== 14) {
         return res.status(400).json({ message: 'CNPJ inválido.' });
       }
+      if (!nomeEmpresaValue) {
+        return res.status(400).json({ message: 'Nome da empresa é obrigatório para prestador.' });
+      }
     }
 
     if (String(password).length < 6) {
@@ -140,8 +154,8 @@ app.post(
 
     try {
       await pool.query(
-        `INSERT INTO users (id, full_name, email, password_hash, tipo, cpf, cnpj)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (id, full_name, email, password_hash, tipo, cpf, cnpj, nome_empresa, ativo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
           String(full_name).trim(),
@@ -150,6 +164,8 @@ app.post(
           normalizedTipo,
           normalizedTipo === 'cliente' ? cpfValue : null,
           normalizedTipo === 'prestador' ? cnpjValue : null,
+          normalizedTipo === 'prestador' ? nomeEmpresaValue : null,
+          true,
         ]
       );
     } catch (error) {
@@ -192,6 +208,12 @@ app.post(
       return res.status(401).json({ message: 'Credenciais inválidas.' });
     }
 
+    if (userRow.tipo === 'prestador' && !(userRow.ativo === true || userRow.ativo === 1)) {
+      return res.status(403).json({
+        message: 'Seu cadastro de prestador está inativo. Procure o administrador.',
+      });
+    }
+
     const user = toPublicUser(userRow);
     const token = createAuthToken(user);
 
@@ -219,6 +241,7 @@ app.patch(
       'telefone',
       'cpf',
       'cnpj',
+      'nome_empresa',
       'data_nascimento',
       'rua',
       'numero',
@@ -274,9 +297,50 @@ app.get(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const pool = getPool();
-    const sortClause = buildSortClause(req.query.sort, ['created_date', 'full_name', 'email', 'tipo']);
+    const sortClause = buildSortClause(req.query.sort, ['created_date', 'full_name', 'email', 'tipo', 'ativo']);
     const [rows] = await pool.query(`SELECT * FROM users ${sortClause}`);
     res.json({ items: serializeRows(rows).map((row) => toPublicUser(row)) });
+  })
+);
+
+app.patch(
+  '/api/users/:id',
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const id = req.params.id;
+    const payload = req.body ?? {};
+
+    if (!Object.prototype.hasOwnProperty.call(payload, 'ativo')) {
+      return res.status(400).json({ message: 'Nenhum campo válido para atualizar.' });
+    }
+
+    const ativo = parseBoolean(payload.ativo);
+    if (typeof ativo !== 'boolean') {
+      return res.status(400).json({ message: 'Campo "ativo" inválido.' });
+    }
+
+    const pool = getPool();
+    const [existingRows] = await pool.query('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
+    const existing = existingRows[0];
+
+    if (!existing) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    if (existing.tipo !== 'prestador') {
+      return res.status(400).json({ message: 'Apenas prestadores podem ter status ativo/inativo.' });
+    }
+
+    await pool.query('UPDATE users SET ativo = ? WHERE id = ?', [ativo, id]);
+    await pool.query('UPDATE prestadores SET ativo = ? WHERE user_id = ? OR user_email = ?', [
+      ativo,
+      id,
+      existing.email,
+    ]);
+
+    const updatedUserRow = await getUserById(id);
+    return res.json({ item: toPublicUser(updatedUserRow) });
   })
 );
 
@@ -456,6 +520,12 @@ app.post(
       ? JSON.stringify(payload.fotos_trabalhos)
       : JSON.stringify([]);
 
+    const isAdmin = req.currentUser.tipo === 'admin';
+    const ativoValue =
+      isAdmin && Object.prototype.hasOwnProperty.call(payload, 'ativo')
+        ? payload.ativo !== false
+        : true;
+
     await pool.query(
       `INSERT INTO prestadores (
         id,
@@ -530,7 +600,7 @@ app.post(
         payload.avaliacao ?? 5,
         Boolean(payload.destaque),
         payload.status_aprovacao || 'pendente',
-        payload.ativo !== false,
+        ativoValue,
         payload.latitude || null,
         payload.longitude || null,
       ]
@@ -603,6 +673,10 @@ app.patch(
 
     for (const field of allowedFields) {
       if (Object.prototype.hasOwnProperty.call(payload, field)) {
+        if (field === 'ativo' && !isAdmin) {
+          continue;
+        }
+
         if (field === 'fotos_trabalhos') {
           updates.push(`${field} = ?`);
           values.push(JSON.stringify(Array.isArray(payload[field]) ? payload[field] : []));
@@ -628,6 +702,17 @@ app.patch(
 
     values.push(id);
     await pool.query(`UPDATE prestadores SET ${updates.join(', ')} WHERE id = ?`, values);
+
+    if (isAdmin && Object.prototype.hasOwnProperty.call(payload, 'ativo')) {
+      const ativo = parseBoolean(payload.ativo);
+      if (typeof ativo === 'boolean') {
+        await pool.query('UPDATE users SET ativo = ? WHERE id = ? OR email = ?', [
+          ativo,
+          existing.user_id,
+          existing.user_email,
+        ]);
+      }
+    }
 
     const [updatedRows] = await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [id]);
     res.json({ item: serializeRow(updatedRows[0]) });

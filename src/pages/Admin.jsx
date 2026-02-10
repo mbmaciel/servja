@@ -131,6 +131,25 @@ export default function Admin() {
     }
   };
 
+  const handleToggleUserAtivo = async (targetUser) => {
+    if (targetUser.tipo !== 'prestador') {
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await base44.entities.User.update(targetUser.id, {
+        ativo: !targetUser.ativo,
+      });
+      toast.success(`Prestador ${targetUser.ativo ? 'desativado' : 'ativado'}`);
+      loadData();
+    } catch (error) {
+      toast.error(error.message || 'Erro ao atualizar status do prestador');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleSaveCategoria = async () => {
     if (!categoriaForm.nome) {
       toast.error('Nome é obrigatório');
@@ -573,6 +592,8 @@ export default function Admin() {
                         <TableHead>Email</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Cidade</TableHead>
+                        <TableHead>Ativo</TableHead>
+                        <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -590,6 +611,35 @@ export default function Admin() {
                             </Badge>
                           </TableCell>
                           <TableCell>{u.cidade || '-'}</TableCell>
+                          <TableCell>
+                            {u.tipo === 'prestador' ? (
+                              u.ativo ? (
+                                <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                              ) : (
+                                <Badge className="bg-red-100 text-red-800">Inativo</Badge>
+                              )
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {u.tipo === 'prestador' ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleToggleUserAtivo(u)}
+                                disabled={isUpdating}
+                              >
+                                {u.ativo ? (
+                                  <XCircle className="w-4 h-4 text-red-500" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                )}
+                              </Button>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

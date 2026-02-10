@@ -46,6 +46,7 @@ export default function Prestador() {
 
   const [formData, setFormData] = useState({
     nome: '',
+    nome_empresa: '',
     categoria_id: '',
     descricao: '',
     telefone: '',
@@ -85,6 +86,7 @@ export default function Prestador() {
         setPrestador(p);
         setFormData({
           nome: p.nome || userData.full_name,
+          nome_empresa: p.nome_empresa || userData.nome_empresa || '',
           categoria_id: p.categoria_id || '',
           descricao: p.descricao || '',
           telefone: p.telefone || userData.telefone || '',
@@ -98,6 +100,7 @@ export default function Prestador() {
         setFormData(prev => ({
           ...prev,
           nome: userData.full_name,
+          nome_empresa: userData.nome_empresa || '',
           telefone: userData.telefone || '',
           cidade: userData.cidade || ''
         }));
@@ -127,7 +130,6 @@ export default function Prestador() {
         preco_base: Number(formData.preco_base) || 0,
         latitude: Number(formData.latitude) || null,
         longitude: Number(formData.longitude) || null,
-        ativo: true
       };
 
       if (prestador) {
@@ -274,6 +276,15 @@ export default function Prestador() {
                         value={formData.nome}
                         onChange={(e) => setFormData({...formData, nome: e.target.value})}
                         placeholder="Seu nome profissional"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nome da empresa</Label>
+                      <Input
+                        value={formData.nome_empresa}
+                        onChange={(e) => setFormData({...formData, nome_empresa: e.target.value})}
+                        placeholder="Nome da sua empresa"
                       />
                     </div>
 
@@ -454,6 +465,9 @@ export default function Prestador() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{prestador.nome}</h3>
+                  {prestador.nome_empresa && (
+                    <p className="text-sm text-gray-500 mt-1">{prestador.nome_empresa}</p>
+                  )}
                   <Badge className="mt-1 bg-blue-50 text-blue-700">
                     {prestador.categoria_nome}
                   </Badge>

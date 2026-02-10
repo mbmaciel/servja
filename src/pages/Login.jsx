@@ -59,6 +59,7 @@ export default function Login() {
     tipo: 'cliente',
     cpf: '',
     cnpj: '',
+    nome_empresa: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,6 +100,11 @@ export default function Login() {
       return;
     }
 
+    if (tipo === 'prestador' && !registerForm.nome_empresa.trim()) {
+      toast.error('Informe o nome da empresa para prestador.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -109,6 +115,7 @@ export default function Login() {
         tipo,
         cpf: tipo === 'cliente' ? registerForm.cpf : null,
         cnpj: tipo === 'prestador' ? registerForm.cnpj : null,
+        nome_empresa: tipo === 'prestador' ? registerForm.nome_empresa.trim() : null,
       });
       toast.success('Conta criada com sucesso.');
       navigate(redirectTo, { replace: true });
@@ -207,6 +214,7 @@ export default function Login() {
                         tipo: value,
                         cpf: value === 'cliente' ? prev.cpf : '',
                         cnpj: value === 'prestador' ? prev.cnpj : '',
+                        nome_empresa: value === 'prestador' ? prev.nome_empresa : '',
                       }))
                     }
                   >
@@ -233,16 +241,29 @@ export default function Login() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Label>CNPJ</Label>
-                    <Input
-                      value={registerForm.cnpj}
-                      onChange={(event) =>
-                        setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
-                      }
-                      placeholder="00.000.000/0000-00"
-                      required
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Nome da empresa</Label>
+                      <Input
+                        value={registerForm.nome_empresa}
+                        onChange={(event) =>
+                          setRegisterForm((prev) => ({ ...prev, nome_empresa: event.target.value }))
+                        }
+                        placeholder="Nome da empresa"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CNPJ</Label>
+                      <Input
+                        value={registerForm.cnpj}
+                        onChange={(event) =>
+                          setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
+                        }
+                        placeholder="00.000.000/0000-00"
+                        required
+                      />
+                    </div>
                   </div>
                 )}
 
