@@ -124,25 +124,22 @@ app.post(
     const nomeEmpresaValue = String(nome_empresa || '').trim();
     const ativoValue = normalizedTipo === 'prestador' ? false : true;
 
-    if (normalizedTipo === 'cliente') {
-      if (!cpfValue) {
-        return res.status(400).json({ message: 'CPF é obrigatório para cliente.' });
-      }
-      if (onlyDigits(cpfValue).length !== 11) {
-        return res.status(400).json({ message: 'CPF inválido.' });
-      }
+    if (!cpfValue) {
+      return res.status(400).json({ message: 'CPF é obrigatório.' });
+    }
+    if (onlyDigits(cpfValue).length !== 11) {
+      return res.status(400).json({ message: 'CPF inválido.' });
     }
 
-    if (normalizedTipo === 'prestador') {
-      if (!cnpjValue) {
-        return res.status(400).json({ message: 'CNPJ é obrigatório para prestador.' });
-      }
-      if (onlyDigits(cnpjValue).length !== 14) {
-        return res.status(400).json({ message: 'CNPJ inválido.' });
-      }
-      if (!nomeEmpresaValue) {
-        return res.status(400).json({ message: 'Nome da empresa é obrigatório para prestador.' });
-      }
+    if (!cnpjValue) {
+      return res.status(400).json({ message: 'CNPJ é obrigatório.' });
+    }
+    if (onlyDigits(cnpjValue).length !== 14) {
+      return res.status(400).json({ message: 'CNPJ inválido.' });
+    }
+
+    if (normalizedTipo === 'prestador' && !nomeEmpresaValue) {
+      return res.status(400).json({ message: 'Nome da empresa é obrigatório para prestador.' });
     }
 
     if (String(password).length < 6) {
@@ -163,8 +160,8 @@ app.post(
           String(email).trim().toLowerCase(),
           passwordHash,
           normalizedTipo,
-          normalizedTipo === 'cliente' ? cpfValue : null,
-          normalizedTipo === 'prestador' ? cnpjValue : null,
+          cpfValue,
+          cnpjValue,
           normalizedTipo === 'prestador' ? nomeEmpresaValue : null,
           ativoValue,
         ]

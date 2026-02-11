@@ -90,13 +90,13 @@ export default function Login() {
       return;
     }
 
-    if (tipo === 'cliente' && cpfDigits.length !== 11) {
-      toast.error('Informe um CPF válido para cliente.');
+    if (cpfDigits.length !== 11) {
+      toast.error('Informe um CPF válido.');
       return;
     }
 
-    if (tipo === 'prestador' && cnpjDigits.length !== 14) {
-      toast.error('Informe um CNPJ válido para prestador.');
+    if (cnpjDigits.length !== 14) {
+      toast.error('Informe um CNPJ válido.');
       return;
     }
 
@@ -113,8 +113,8 @@ export default function Login() {
         email: registerForm.email,
         password: registerForm.password,
         tipo,
-        cpf: tipo === 'cliente' ? registerForm.cpf : null,
-        cnpj: tipo === 'prestador' ? registerForm.cnpj : null,
+        cpf: registerForm.cpf,
+        cnpj: registerForm.cnpj,
         nome_empresa: tipo === 'prestador' ? registerForm.nome_empresa.trim() : null,
       });
 
@@ -217,8 +217,6 @@ export default function Login() {
                       setRegisterForm((prev) => ({
                         ...prev,
                         tipo: value,
-                        cpf: value === 'cliente' ? prev.cpf : '',
-                        cnpj: value === 'prestador' ? prev.cnpj : '',
                         nome_empresa: value === 'prestador' ? prev.nome_empresa : '',
                       }))
                     }
@@ -233,42 +231,41 @@ export default function Login() {
                   </Select>
                 </div>
 
-                {registerForm.tipo === 'cliente' ? (
+                <div className="space-y-2">
+                  <Label>CPF</Label>
+                  <Input
+                    value={registerForm.cpf}
+                    onChange={(event) =>
+                      setRegisterForm((prev) => ({ ...prev, cpf: event.target.value }))
+                    }
+                    placeholder="000.000.000-00"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>CNPJ</Label>
+                  <Input
+                    value={registerForm.cnpj}
+                    onChange={(event) =>
+                      setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
+                    }
+                    placeholder="00.000.000/0000-00"
+                    required
+                  />
+                </div>
+
+                {registerForm.tipo === 'prestador' && (
                   <div className="space-y-2">
-                    <Label>CPF</Label>
+                    <Label>Nome da empresa</Label>
                     <Input
-                      value={registerForm.cpf}
+                      value={registerForm.nome_empresa}
                       onChange={(event) =>
-                        setRegisterForm((prev) => ({ ...prev, cpf: event.target.value }))
+                        setRegisterForm((prev) => ({ ...prev, nome_empresa: event.target.value }))
                       }
-                      placeholder="000.000.000-00"
+                      placeholder="Nome da empresa"
                       required
                     />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Nome da empresa</Label>
-                      <Input
-                        value={registerForm.nome_empresa}
-                        onChange={(event) =>
-                          setRegisterForm((prev) => ({ ...prev, nome_empresa: event.target.value }))
-                        }
-                        placeholder="Nome da empresa"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>CNPJ</Label>
-                      <Input
-                        value={registerForm.cnpj}
-                        onChange={(event) =>
-                          setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
-                        }
-                        placeholder="00.000.000/0000-00"
-                        required
-                      />
-                    </div>
                   </div>
                 )}
 
