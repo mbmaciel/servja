@@ -294,11 +294,7 @@ export default function Login() {
           </Tabs>
 
           <div className="mt-6 text-sm text-gray-500 space-y-1">
-            <p className="font-medium text-gray-700">Usuários demo:</p>
-            <p>`admin@servija.local` / `admin123`</p>
-            <p>`prestador@servija.local` / `prestador123`</p>
-            <p>`cliente@servija.local` / `cliente123`</p>
-          </div>
+            </div>
 
           <div className="mt-4">
             <Link className="text-blue-600 hover:text-blue-700 text-sm" to={createPageUrl('Home')}>
