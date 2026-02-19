@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { 
   User, Mail, Phone, Save, Loader2, Building, Shield, Calendar, CreditCard, Home
@@ -26,8 +26,14 @@ import { toast } from "sonner";
 
 export default function Perfil() {
   const [user, setUser] = useState(null);
+  const [prestadorPerfil, setPrestadorPerfil] = useState(null);
+  const [categorias, setCategorias] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCepLoading, setIsCepLoading] = useState(false);
+  const cepLookupTimeoutRef = useRef(null);
+  const cepAbortControllerRef = useRef(null);
+  const lastCepLookupRef = useRef('');
   const [formData, setFormData] = useState({
     telefone: '',
     cpf: '',
@@ -39,18 +45,40 @@ export default function Perfil() {
     cidade: '',
     estado: '',
     cep: '',
-    tipo: 'cliente'
+    tipo: 'cliente',
+    categoria_id: '',
+    preco_base: ''
   });
 
   useEffect(() => {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (cepLookupTimeoutRef.current) {
+        clearTimeout(cepLookupTimeoutRef.current);
+      }
+      if (cepAbortControllerRef.current) {
+        cepAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   const loadUser = async () => {
     setIsLoading(true);
     try {
       const userData = await base44.auth.me();
+      const [categoriasData, prestadoresData] = await Promise.all([
+        base44.entities.Categoria.filter({ ativo: true }),
+        base44.entities.Prestador.filter({ user_email: userData.email })
+      ]);
+
+      const prestadorData = prestadoresData[0] || null;
+
       setUser(userData);
+      setCategorias(categoriasData);
+      setPrestadorPerfil(prestadorData);
       setFormData({
         telefone: userData.telefone || '',
         cpf: userData.cpf || '',
@@ -62,7 +90,12 @@ export default function Perfil() {
         cidade: userData.cidade || '',
         estado: userData.estado || '',
         cep: userData.cep || '',
-        tipo: userData.tipo || 'cliente'
+        tipo: userData.tipo || 'cliente',
+        categoria_id: prestadorData?.categoria_id || '',
+        preco_base:
+          prestadorData?.preco_base !== undefined && prestadorData?.preco_base !== null
+            ? String(prestadorData.preco_base)
+            : ''
       });
     } catch (error) {
       toast.error('Você precisa estar logado para acessar esta página');
@@ -73,9 +106,68 @@ export default function Perfil() {
   };
 
   const handleSave = async () => {
+    if (formData.tipo === 'prestador' && !formData.categoria_id) {
+      toast.error('Selecione uma categoria para conta de prestador');
+      return;
+    }
+
+    if (formData.tipo === 'prestador' && !formData.telefone?.trim()) {
+      toast.error('Telefone é obrigatório para conta de prestador');
+      return;
+    }
+
+    if (formData.tipo === 'prestador' && formData.preco_base !== '') {
+      const precoBaseNumero = Number(formData.preco_base);
+      if (!Number.isFinite(precoBaseNumero) || precoBaseNumero < 0) {
+        toast.error('Informe um preço válido');
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
-      await base44.auth.updateMe(formData);
+      const userPayload = {
+        telefone: formData.telefone,
+        cpf: formData.cpf,
+        data_nascimento: formData.data_nascimento,
+        rua: formData.rua,
+        numero: formData.numero,
+        complemento: formData.complemento,
+        bairro: formData.bairro,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        cep: formData.cep,
+        tipo: formData.tipo
+      };
+
+      const updatedUser = await base44.auth.updateMe(userPayload);
+      setUser(updatedUser);
+
+      if (formData.tipo === 'prestador') {
+        const categoriaSelecionada = categorias.find(c => c.id === formData.categoria_id);
+        const precoBaseNumero =
+          formData.preco_base === '' ? null : Number(formData.preco_base);
+        const prestadorPayload = {
+          nome: updatedUser?.full_name || user?.full_name || '',
+          categoria_id: formData.categoria_id,
+          categoria_nome: categoriaSelecionada?.nome || '',
+          telefone: formData.telefone,
+          cidade: formData.cidade || '',
+          preco_base: precoBaseNumero
+        };
+
+        if (prestadorPerfil?.id) {
+          const updatedPrestador = await base44.entities.Prestador.update(
+            prestadorPerfil.id,
+            prestadorPayload
+          );
+          setPrestadorPerfil(updatedPrestador || prestadorPerfil);
+        } else {
+          const createdPrestador = await base44.entities.Prestador.create(prestadorPayload);
+          setPrestadorPerfil(createdPrestador || null);
+        }
+      }
+
       toast.success('Perfil atualizado com sucesso!');
       loadUser();
     } catch (error) {
@@ -88,6 +180,85 @@ export default function Perfil() {
   const getInitials = (name) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const formatCep = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  };
+
+  const fillAddressFromCep = async (cep) => {
+    if (cepAbortControllerRef.current) {
+      cepAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    cepAbortControllerRef.current = controller;
+    setIsCepLoading(true);
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao consultar CEP');
+      }
+
+      const data = await response.json();
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        rua: data.logradouro || '',
+        bairro: data.bairro || '',
+        cidade: data.localidade || '',
+        estado: (data.uf || '').toUpperCase()
+      }));
+
+      lastCepLookupRef.current = cep;
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        toast.error('Não foi possível buscar o CEP');
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsCepLoading(false);
+      }
+    }
+  };
+
+  const handleCepChange = (e) => {
+    const formattedCep = formatCep(e.target.value);
+    const cepDigits = formattedCep.replace(/\D/g, '');
+
+    setFormData(prev => ({ ...prev, cep: formattedCep }));
+
+    if (cepLookupTimeoutRef.current) {
+      clearTimeout(cepLookupTimeoutRef.current);
+    }
+
+    if (cepDigits.length !== 8) {
+      if (cepAbortControllerRef.current) {
+        cepAbortControllerRef.current.abort();
+        cepAbortControllerRef.current = null;
+      }
+      setIsCepLoading(false);
+      lastCepLookupRef.current = '';
+      return;
+    }
+
+    if (cepDigits === lastCepLookupRef.current) {
+      return;
+    }
+
+    cepLookupTimeoutRef.current = setTimeout(() => {
+      fillAddressFromCep(cepDigits);
+    }, 400);
   };
 
   if (isLoading) {
@@ -224,8 +395,14 @@ export default function Perfil() {
                     <Input 
                       placeholder="00000-000"
                       value={formData.cep}
-                      onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                      onChange={handleCepChange}
                     />
+                    {isCepLoading && (
+                      <p className="text-xs text-gray-500 flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Buscando endereço pelo CEP...
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -309,6 +486,41 @@ export default function Perfil() {
                 Escolha "Prestador" se deseja oferecer seus serviços na plataforma
               </p>
             </div>
+
+            {formData.tipo === 'prestador' && (
+              <div className="space-y-2">
+                <Label>Categoria de Serviço *</Label>
+                <Select
+                  value={formData.categoria_id || ''}
+                  onValueChange={(v) => setFormData({ ...formData, categoria_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map((categoria) => (
+                      <SelectItem key={categoria.id} value={categoria.id}>
+                        {categoria.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {formData.tipo === 'prestador' && (
+              <div className="space-y-2">
+                <Label>Preço Base (R$)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="100.00"
+                  value={formData.preco_base}
+                  onChange={(e) => setFormData({ ...formData, preco_base: e.target.value })}
+                />
+              </div>
+            )}
 
             <Button 
               onClick={handleSave} 

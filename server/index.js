@@ -553,6 +553,7 @@ app.post(
     const fotosTrabalhos = Array.isArray(payload.fotos_trabalhos)
       ? JSON.stringify(payload.fotos_trabalhos)
       : JSON.stringify([]);
+    const servicos = Array.isArray(payload.servicos) ? JSON.stringify(payload.servicos) : JSON.stringify([]);
 
     const isAdmin = req.currentUser.tipo === 'admin';
     const ativoValue =
@@ -575,6 +576,7 @@ app.post(
         categoria_id,
         categoria_nome,
         descricao,
+        servicos,
         valor_hora,
         preco_base,
         tempo_medio_atendimento,
@@ -598,7 +600,7 @@ app.post(
         ativo,
         latitude,
         longitude
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         id,
@@ -614,6 +616,7 @@ app.post(
         payload.categoria_id,
         categoriaNome,
         payload.descricao || null,
+        servicos,
         payload.valor_hora || null,
         payload.preco_base || null,
         payload.tempo_medio_atendimento || null,
@@ -677,6 +680,7 @@ app.patch(
       'categoria_id',
       'categoria_nome',
       'descricao',
+      'servicos',
       'valor_hora',
       'preco_base',
       'tempo_medio_atendimento',
@@ -712,6 +716,12 @@ app.patch(
         }
 
         if (field === 'fotos_trabalhos') {
+          updates.push(`${field} = ?`);
+          values.push(JSON.stringify(Array.isArray(payload[field]) ? payload[field] : []));
+          continue;
+        }
+
+        if (field === 'servicos') {
           updates.push(`${field} = ?`);
           values.push(JSON.stringify(Array.isArray(payload[field]) ? payload[field] : []));
           continue;

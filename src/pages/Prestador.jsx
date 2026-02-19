@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { 
-  Loader2, Save, MapPin, DollarSign, FileText,
-  Clock, CheckCircle, RefreshCw, Briefcase, Edit
+import {
+  Loader2,
+  MapPin,
+  FileText,
+  Clock,
+  CheckCircle,
+  RefreshCw,
+  Briefcase,
+  Edit
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,45 +20,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import SolicitacaoCard from '@/components/servija/SolicitacaoCard';
 import { toast } from "sonner";
 
 export default function Prestador() {
   const [user, setUser] = useState(null);
   const [prestador, setPrestador] = useState(null);
-  const [categorias, setCategorias] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-
-  const [formData, setFormData] = useState({
-    nome: '',
-    nome_empresa: '',
-    categoria_id: '',
-    descricao: '',
-    telefone: '',
-    cidade: '',
-    preco_base: '',
-    latitude: '',
-    longitude: '',
-    foto: ''
-  });
 
   useEffect(() => {
     loadData();
@@ -72,79 +45,24 @@ export default function Prestador() {
         return;
       }
 
-      const [categoriasData, prestadoresData, solicitacoesData] = await Promise.all([
-        base44.entities.Categoria.filter({ ativo: true }),
+      const [prestadoresData, solicitacoesData] = await Promise.all([
         base44.entities.Prestador.filter({ user_email: userData.email }),
         base44.entities.Solicitacao.filter({ prestador_email: userData.email }, '-created_date')
       ]);
 
-      setCategorias(categoriasData);
       setSolicitacoes(solicitacoesData);
 
       if (prestadoresData.length > 0) {
         const p = prestadoresData[0];
         setPrestador(p);
-        setFormData({
-          nome: p.nome || userData.full_name,
-          nome_empresa: p.nome_empresa || userData.nome_empresa || '',
-          categoria_id: p.categoria_id || '',
-          descricao: p.descricao || '',
-          telefone: p.telefone || userData.telefone || '',
-          cidade: p.cidade || userData.cidade || '',
-          preco_base: p.preco_base || '',
-          latitude: p.latitude || '',
-          longitude: p.longitude || '',
-          foto: p.foto || ''
-        });
       } else {
-        setFormData(prev => ({
-          ...prev,
-          nome: userData.full_name,
-          nome_empresa: userData.nome_empresa || '',
-          telefone: userData.telefone || '',
-          cidade: userData.cidade || ''
-        }));
+        setPrestador(null);
       }
     } catch (error) {
       toast.error('Você precisa estar logado');
       base44.auth.redirectToLogin();
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleSavePerfil = async () => {
-    if (!formData.nome || !formData.categoria_id) {
-      toast.error('Nome e categoria são obrigatórios');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const categoria = categorias.find(c => c.id === formData.categoria_id);
-      const data = {
-        ...formData,
-        user_id: user.id,
-        user_email: user.email,
-        categoria_nome: categoria?.nome || '',
-        preco_base: Number(formData.preco_base) || 0,
-        latitude: Number(formData.latitude) || null,
-        longitude: Number(formData.longitude) || null,
-      };
-
-      if (prestador) {
-        await base44.entities.Prestador.update(prestador.id, data);
-      } else {
-        await base44.entities.Prestador.create(data);
-      }
-
-      toast.success('Perfil salvo com sucesso!');
-      setShowEditModal(false);
-      loadData();
-    } catch (error) {
-      toast.error('Erro ao salvar perfil');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -196,15 +114,19 @@ export default function Prestador() {
 
   const getFilteredSolicitacoes = (status) => {
     if (status === 'all') return solicitacoes;
-    return solicitacoes.filter(s => s.status === status);
+    return solicitacoes.filter((s) => s.status === status);
   };
 
   const counts = {
     all: solicitacoes.length,
-    aberto: solicitacoes.filter(s => s.status === 'aberto').length,
-    aceito: solicitacoes.filter(s => s.status === 'aceito').length,
-    concluido: solicitacoes.filter(s => s.status === 'concluido').length,
+    aberto: solicitacoes.filter((s) => s.status === 'aberto').length,
+    aceito: solicitacoes.filter((s) => s.status === 'aceito').length,
+    concluido: solicitacoes.filter((s) => s.status === 'concluido').length,
   };
+
+  const servicosCount = Array.isArray(prestador?.servicos)
+    ? prestador.servicos.length
+    : 0;
 
   if (isLoading) {
     return (
@@ -239,7 +161,6 @@ export default function Prestador() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -256,153 +177,18 @@ export default function Prestador() {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Atualizar
               </Button>
-              <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Edit className="w-4 h-4 mr-2" />
-                    {prestador ? 'Editar Perfil' : 'Criar Perfil'}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {prestador ? 'Editar Perfil de Prestador' : 'Criar Perfil de Prestador'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label>Nome *</Label>
-                      <Input
-                        value={formData.nome}
-                        onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                        placeholder="Seu nome profissional"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Nome da empresa</Label>
-                      <Input
-                        value={formData.nome_empresa}
-                        onChange={(e) => setFormData({...formData, nome_empresa: e.target.value})}
-                        placeholder="Nome da sua empresa"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Categoria *</Label>
-                      <Select
-                        value={formData.categoria_id}
-                        onValueChange={(v) => setFormData({...formData, categoria_id: v})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categorias.map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.nome}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Descrição</Label>
-                      <Textarea
-                        value={formData.descricao}
-                        onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                        placeholder="Descreva seus serviços..."
-                        className="min-h-[100px]"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Telefone</Label>
-                        <Input
-                          value={formData.telefone}
-                          onChange={(e) => setFormData({...formData, telefone: e.target.value})}
-                          placeholder="(11) 99999-9999"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Cidade</Label>
-                        <Input
-                          value={formData.cidade}
-                          onChange={(e) => setFormData({...formData, cidade: e.target.value})}
-                          placeholder="São Paulo, SP"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Preço Base (R$)</Label>
-                      <Input
-                        type="number"
-                        value={formData.preco_base}
-                        onChange={(e) => setFormData({...formData, preco_base: e.target.value})}
-                        placeholder="100.00"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Latitude</Label>
-                        <Input
-                          type="number"
-                          value={formData.latitude}
-                          onChange={(e) => setFormData({...formData, latitude: e.target.value})}
-                          placeholder="-23.5505"
-                          step="any"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Longitude</Label>
-                        <Input
-                          type="number"
-                          value={formData.longitude}
-                          onChange={(e) => setFormData({...formData, longitude: e.target.value})}
-                          placeholder="-46.6333"
-                          step="any"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Dica: Use Google Maps para encontrar suas coordenadas
-                    </p>
-
-                    <div className="space-y-2">
-                      <Label>URL da Foto</Label>
-                      <Input
-                        value={formData.foto}
-                        onChange={(e) => setFormData({...formData, foto: e.target.value})}
-                        placeholder="https://..."
-                      />
-                    </div>
-
-                    <Button 
-                      onClick={handleSavePerfil}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4 mr-2" />
-                      )}
-                      Salvar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <a href="/Perfil">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar Perfil
+                </Button>
+              </a>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
@@ -439,20 +225,17 @@ export default function Prestador() {
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-purple-600" />
+              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <Briefcase className="w-5 h-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  R$ {prestador?.preco_base?.toFixed(0) || '0'}
-                </p>
-                <p className="text-sm text-gray-500">Preço Base</p>
+                <p className="text-2xl font-bold text-gray-900">{servicosCount}</p>
+                <p className="text-sm text-gray-500">Serviços</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Perfil Preview */}
         {prestador && (
           <Card className="mb-8">
             <CardHeader>
@@ -480,11 +263,6 @@ export default function Prestador() {
                         <MapPin className="w-4 h-4" /> {prestador.cidade}
                       </span>
                     )}
-                    {prestador.preco_base && (
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" /> R$ {prestador.preco_base.toFixed(2)}
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -502,7 +280,6 @@ export default function Prestador() {
           </Card>
         )}
 
-        {/* Solicitações */}
         <Tabs defaultValue="aberto" className="space-y-6">
           <TabsList className="bg-white border border-gray-200">
             <TabsTrigger value="aberto">Pendentes ({counts.aberto})</TabsTrigger>

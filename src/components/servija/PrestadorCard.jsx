@@ -10,6 +10,35 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const getPrecoInicial = () => {
+    let servicos = prestador?.servicos;
+    if (typeof servicos === 'string') {
+      try {
+        servicos = JSON.parse(servicos);
+      } catch {
+        servicos = [];
+      }
+    }
+
+    if (Array.isArray(servicos)) {
+      const precos = servicos
+        .map((servico) => Number(servico?.preco))
+        .filter((preco) => Number.isFinite(preco) && preco >= 0);
+
+      if (precos.length > 0) {
+        return Math.min(...precos);
+      }
+    }
+
+    if (typeof prestador?.preco_base === 'number') {
+      return prestador.preco_base;
+    }
+
+    return null;
+  };
+
+  const precoInicial = getPrecoInicial();
+
   if (compact) {
     return (
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -36,7 +65,7 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
             <span className="text-sm font-medium">{prestador.avaliacao?.toFixed(1) || '5.0'}</span>
           </div>
           <p className="text-blue-600 font-bold">
-            R$ {prestador.preco_base?.toFixed(2) || '0.00'}
+            R$ {precoInicial?.toFixed(2) || '0.00'}
           </p>
         </div>
         <Button 
@@ -113,7 +142,7 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
           <div>
             <p className="text-xs text-gray-500">A partir de</p>
             <p className="text-2xl font-bold text-blue-600">
-              R$ {prestador.preco_base?.toFixed(2) || '0.00'}
+              R$ {precoInicial?.toFixed(2) || '0.00'}
             </p>
           </div>
           <Button 

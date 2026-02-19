@@ -19,6 +19,28 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
   const [precoOferta, setPrecoOferta] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const getPrecoMinimoServico = () => {
+    let servicos = prestador?.servicos;
+    if (typeof servicos === 'string') {
+      try {
+        servicos = JSON.parse(servicos);
+      } catch {
+        servicos = [];
+      }
+    }
+
+    if (!Array.isArray(servicos)) return null;
+
+    const precos = servicos
+      .map((servico) => Number(servico?.preco))
+      .filter((preco) => Number.isFinite(preco) && preco >= 0);
+
+    if (precos.length === 0) return null;
+    return Math.min(...precos);
+  };
+
+  const precoReferencia = getPrecoMinimoServico();
+
   const getInitials = (name) => {
     if (!name) return 'P';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -50,7 +72,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
         prestador_nome: prestador.nome,
         categoria_nome: prestador.categoria_nome,
         descricao: descricao.trim(),
-        preco_proposto: precoOferta ? Number(precoOferta) : prestador.preco_base,
+        preco_proposto: precoOferta ? Number(precoOferta) : null,
         status: 'aberto'
       });
 
@@ -60,7 +82,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
         properties: {
           categoria: prestador.categoria_nome,
           prestador_id: prestador.id,
-          preco_proposto: precoOferta ? Number(precoOferta) : prestador.preco_base,
+          preco_proposto: precoOferta ? Number(precoOferta) : null,
           tem_oferta_customizada: !!precoOferta
         }
       });
@@ -116,14 +138,6 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
           </div>
         </div>
 
-        {/* Preço Base */}
-        <div className="bg-blue-50 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Preço base do prestador</p>
-          <p className="text-2xl font-bold text-blue-600">
-            R$ {prestador.preco_base?.toFixed(2) || '0.00'}
-          </p>
-        </div>
-
         {/* Formulário */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -145,7 +159,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
               <Input
                 id="preco"
                 type="number"
-                placeholder={prestador.preco_base?.toFixed(2) || '0.00'}
+                placeholder={precoReferencia !== null ? precoReferencia.toFixed(2) : '0.00'}
                 value={precoOferta}
                 onChange={(e) => setPrecoOferta(e.target.value)}
                 className="pl-10"
@@ -154,7 +168,9 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
               />
             </div>
             <p className="text-xs text-gray-500">
-              Deixe em branco para usar o preço base do prestador
+              {precoReferencia !== null
+                ? `Faixa inicial dos serviços cadastrados: R$ ${precoReferencia.toFixed(2)}`
+                : 'Se preferir, deixe em branco e combine o valor com o prestador'}
             </p>
           </div>
 

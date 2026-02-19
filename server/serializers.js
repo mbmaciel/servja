@@ -15,7 +15,7 @@ export const serializeRow = (row) => {
 
   return Object.fromEntries(
     Object.entries(row).map(([key, value]) => {
-      if (key === 'fotos_trabalhos' && typeof value === 'string') {
+      if ((key === 'fotos_trabalhos' || key === 'servicos') && typeof value === 'string') {
         try {
           return [key, JSON.parse(value)];
         } catch {

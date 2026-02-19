@@ -60,6 +60,33 @@ export default function MapaPrestadores({
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const getPrecoInicial = (prestador) => {
+    let servicos = prestador?.servicos;
+    if (typeof servicos === 'string') {
+      try {
+        servicos = JSON.parse(servicos);
+      } catch {
+        servicos = [];
+      }
+    }
+
+    if (Array.isArray(servicos)) {
+      const precos = servicos
+        .map((servico) => Number(servico?.preco))
+        .filter((preco) => Number.isFinite(preco) && preco >= 0);
+
+      if (precos.length > 0) {
+        return Math.min(...precos);
+      }
+    }
+
+    if (typeof prestador?.preco_base === 'number') {
+      return prestador.preco_base;
+    }
+
+    return null;
+  };
+
   const prestadoresComLocalizacao = prestadores.filter(p => p.latitude && p.longitude);
 
   return (
@@ -90,7 +117,7 @@ export default function MapaPrestadores({
                 {/* Preço em destaque no topo */}
                 <div className="bg-blue-600 text-white px-3 py-2 rounded-lg mb-3 text-center">
                   <p className="text-xs font-medium">A partir de</p>
-                  <p className="text-2xl font-bold">R$ {prestador.preco_base?.toFixed(2) || '0.00'}</p>
+                  <p className="text-2xl font-bold">R$ {getPrecoInicial(prestador)?.toFixed(2) || '0.00'}</p>
                 </div>
 
                 <div className="flex items-center gap-3">

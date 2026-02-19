@@ -217,6 +217,16 @@ export default function Admin() {
   };
 
   const handleChangeUserType = async (targetUser, nextTipo) => {
+    const targetProfile = targetUser?.tipo || (targetUser?.role === 'admin' ? 'admin' : 'cliente');
+    const totalAdmins = users.filter(
+      (item) => (item?.tipo || (item?.role === 'admin' ? 'admin' : 'cliente')) === 'admin'
+    ).length;
+
+    if (targetProfile === 'admin' && nextTipo === 'cliente' && totalAdmins <= 1) {
+      toast.error('Não é possível remover o último administrador.');
+      return;
+    }
+
     setIsUpdating(true);
     try {
       await base44.entities.User.update(targetUser.id, { tipo: nextTipo });
@@ -256,6 +266,7 @@ export default function Admin() {
   const filteredAdmins = users.filter(
     (targetUser) => getUserProfile(targetUser) === 'admin' && matchesSearch(targetUser)
   );
+  const totalAdmins = users.filter((targetUser) => getUserProfile(targetUser) === 'admin').length;
 
   const filteredPrestadores = prestadores.filter(p =>
     p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -685,6 +696,11 @@ export default function Admin() {
               <CardHeader>
                 <CardTitle>Administradores</CardTitle>
                 <CardDescription>Lista de usuários com perfil administrador</CardDescription>
+                {totalAdmins <= 1 && (
+                  <p className="text-sm text-amber-700">
+                    Não é possível remover o último administrador.
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -712,7 +728,7 @@ export default function Admin() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleChangeUserType(u, 'cliente')}
-                              disabled={isUpdating}
+                              disabled={isUpdating || totalAdmins <= 1}
                             >
                               <Users className="w-4 h-4 text-blue-600" />
                             </Button>

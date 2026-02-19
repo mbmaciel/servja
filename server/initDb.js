@@ -49,6 +49,7 @@ const createTablesSql = [
     categoria_id CHAR(36) NULL,
     categoria_nome VARCHAR(120) NULL,
     descricao TEXT NULL,
+    servicos JSON NULL,
     valor_hora DECIMAL(10, 2) NULL,
     preco_base DECIMAL(10, 2) NULL,
     tempo_medio_atendimento VARCHAR(80) NULL,
@@ -178,6 +179,14 @@ export const initializeDatabase = async () => {
 
     try {
       await connection.query('ALTER TABLE users ADD COLUMN ativo BOOLEAN NOT NULL DEFAULT TRUE AFTER nome_empresa');
+    } catch (error) {
+      if (error?.code !== 'ER_DUP_FIELDNAME') {
+        throw error;
+      }
+    }
+
+    try {
+      await connection.query('ALTER TABLE prestadores ADD COLUMN servicos JSON NULL AFTER descricao');
     } catch (error) {
       if (error?.code !== 'ER_DUP_FIELDNAME') {
         throw error;
