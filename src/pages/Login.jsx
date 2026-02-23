@@ -95,7 +95,7 @@ export default function Login() {
       return;
     }
 
-    if (cnpjDigits.length !== 14) {
+    if (cnpjDigits.length > 0 && cnpjDigits.length !== 14) {
       toast.error('Informe um CNPJ válido.');
       return;
     }
@@ -251,7 +251,6 @@ export default function Login() {
                       setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
                     }
                     placeholder="00.000.000/0000-00"
-                    required
                   />
                 </div>
 

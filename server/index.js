@@ -131,10 +131,7 @@ app.post(
       return res.status(400).json({ message: 'CPF inválido.' });
     }
 
-    if (!cnpjValue) {
-      return res.status(400).json({ message: 'CNPJ é obrigatório.' });
-    }
-    if (onlyDigits(cnpjValue).length !== 14) {
+    if (cnpjValue && onlyDigits(cnpjValue).length !== 14) {
       return res.status(400).json({ message: 'CNPJ inválido.' });
     }
 
@@ -161,7 +158,7 @@ app.post(
           passwordHash,
           normalizedTipo,
           cpfValue,
-          cnpjValue,
+          cnpjValue || null,
           normalizedTipo === 'prestador' ? nomeEmpresaValue : null,
           ativoValue,
         ]

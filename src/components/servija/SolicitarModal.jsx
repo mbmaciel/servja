@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Star, MapPin, BadgeCheck, Send, Loader2 } from 'lucide-react';
+import { Star, MapPin, BadgeCheck, Send, Loader2, MessageCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 
 export default function SolicitarModal({ prestador, open, onOpenChange, user }) {
+  const whatsappMessage = 'Quero mais informações. Entrei em contato  através do site ServeJa.com';
   const [descricao, setDescricao] = useState('');
   const [precoOferta, setPrecoOferta] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +45,25 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
   const getInitials = (name) => {
     if (!name) return 'P';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const buildWhatsappUrl = (telefone) => {
+    const digits = String(telefone || '').replace(/\D/g, '');
+    if (!digits) return null;
+
+    const phone = digits.length <= 11 ? `55${digits}` : digits;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`;
+  };
+
+  const handleWhatsappClick = () => {
+    const whatsappUrl = buildWhatsappUrl(prestador?.telefone);
+
+    if (!whatsappUrl) {
+      toast.error('Telefone do prestador não disponível para WhatsApp');
+      return;
+    }
+
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleSubmit = async (e) => {
@@ -174,7 +194,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
             </p>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <Button 
               type="button" 
               variant="outline" 
@@ -182,6 +202,15 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
               onClick={() => onOpenChange(false)}
             >
               Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 border-green-600 text-green-700 hover:bg-green-50 hover:text-green-700"
+              onClick={handleWhatsappClick}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Whatsapp
             </Button>
             <Button 
               type="submit" 
@@ -193,7 +222,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
               ) : (
                 <Send className="w-4 h-4 mr-2" />
               )}
-              Enviar Solicitação
+              Solicitação
             </Button>
           </div>
         </form>
