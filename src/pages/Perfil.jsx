@@ -198,26 +198,27 @@ export default function Perfil() {
     setIsCepLoading(true);
 
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+      const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`, {
         signal: controller.signal
       });
+
+      if (response.status === 404) {
+        toast.error('CEP não encontrado');
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Erro ao consultar CEP');
       }
 
       const data = await response.json();
-      if (data.erro) {
-        toast.error('CEP não encontrado');
-        return;
-      }
 
       setFormData(prev => ({
         ...prev,
-        rua: data.logradouro || '',
-        bairro: data.bairro || '',
-        cidade: data.localidade || '',
-        estado: (data.uf || '').toUpperCase()
+        rua: data.street || '',
+        bairro: data.neighborhood || '',
+        cidade: data.city || '',
+        estado: (data.state || '').toUpperCase()
       }));
 
       lastCepLookupRef.current = cep;
