@@ -35,6 +35,8 @@ export default function Perfil() {
   const cepAbortControllerRef = useRef(null);
   const lastCepLookupRef = useRef('');
   const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
     telefone: '',
     cpf: '',
     data_nascimento: '',
@@ -69,17 +71,20 @@ export default function Perfil() {
     setIsLoading(true);
     try {
       const userData = await base44.auth.me();
-      const [categoriasData, prestadoresData] = await Promise.all([
+      const [categoriasData, prestadoresByUserId, prestadoresByEmail] = await Promise.all([
         base44.entities.Categoria.filter({ ativo: true }),
+        base44.entities.Prestador.filter({ user_id: userData.id }),
         base44.entities.Prestador.filter({ user_email: userData.email })
       ]);
 
-      const prestadorData = prestadoresData[0] || null;
+      const prestadorData = prestadoresByUserId[0] || prestadoresByEmail[0] || null;
 
       setUser(userData);
       setCategorias(categoriasData);
       setPrestadorPerfil(prestadorData);
       setFormData({
+        full_name: userData.full_name || '',
+        email: userData.email || '',
         telefone: userData.telefone || '',
         cpf: userData.cpf || '',
         data_nascimento: userData.data_nascimento || '',
@@ -106,6 +111,24 @@ export default function Perfil() {
   };
 
   const handleSave = async () => {
+    const trimmedName = formData.full_name.trim();
+    const trimmedEmail = formData.email.trim().toLowerCase();
+
+    if (!trimmedName) {
+      toast.error('Nome é obrigatório');
+      return;
+    }
+
+    if (!trimmedEmail) {
+      toast.error('Email é obrigatório');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error('Informe um email válido');
+      return;
+    }
+
     if (formData.tipo === 'prestador' && !formData.categoria_id) {
       toast.error('Selecione uma categoria para conta de prestador');
       return;
@@ -127,6 +150,8 @@ export default function Perfil() {
     setIsSaving(true);
     try {
       const userPayload = {
+        full_name: trimmedName,
+        email: trimmedEmail,
         telefone: formData.telefone,
         cpf: formData.cpf,
         data_nascimento: formData.data_nascimento,
@@ -148,7 +173,9 @@ export default function Perfil() {
         const precoBaseNumero =
           formData.preco_base === '' ? null : Number(formData.preco_base);
         const prestadorPayload = {
-          nome: updatedUser?.full_name || user?.full_name || '',
+          user_id: updatedUser?.id || user?.id,
+          user_email: updatedUser?.email || trimmedEmail,
+          nome: updatedUser?.full_name || trimmedName,
           categoria_id: formData.categoria_id,
           categoria_nome: categoriaSelecionada?.nome || '',
           telefone: formData.telefone,
@@ -171,7 +198,7 @@ export default function Perfil() {
       toast.success('Perfil atualizado com sucesso!');
       loadUser();
     } catch (error) {
-      toast.error('Erro ao atualizar perfil');
+      toast.error(error.message || 'Erro ao atualizar perfil');
     } finally {
       setIsSaving(false);
     }
@@ -323,13 +350,9 @@ export default function Perfil() {
                   Nome
                 </Label>
                 <Input 
-                  value={user?.full_name || ''} 
-                  disabled 
-                  className="bg-gray-50"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 />
-                <p className="text-xs text-gray-400">
-                  O nome não pode ser alterado aqui
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -338,9 +361,9 @@ export default function Perfil() {
                   Email
                 </Label>
                 <Input 
-                  value={user?.email || ''} 
-                  disabled 
-                  className="bg-gray-50"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
             </div>

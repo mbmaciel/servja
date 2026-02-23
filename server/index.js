@@ -233,6 +233,8 @@ app.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const allowedFields = [
+      'full_name',
+      'email',
       'telefone',
       'cpf',
       'cnpj',
@@ -252,9 +254,47 @@ app.patch(
     const payload = req.body ?? {};
     const updates = [];
     const values = [];
+    const pool = getPool();
+    const currentName = req.currentUser.full_name;
+    const currentEmail = req.currentUser.email;
+    let nextName = currentName;
+    let nextEmail = currentEmail;
 
     for (const field of allowedFields) {
       if (Object.prototype.hasOwnProperty.call(payload, field)) {
+        if (field === 'full_name') {
+          const normalizedName = String(payload[field] ?? '').trim();
+          if (!normalizedName) {
+            return res.status(400).json({ message: 'Nome é obrigatório.' });
+          }
+          updates.push('full_name = ?');
+          values.push(normalizedName);
+          nextName = normalizedName;
+          continue;
+        }
+
+        if (field === 'email') {
+          const normalizedEmail = String(payload[field] ?? '').trim().toLowerCase();
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+            return res.status(400).json({ message: 'Email inválido.' });
+          }
+
+          const [emailRows] = await pool.query(
+            'SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1',
+            [normalizedEmail, req.currentUser.id]
+          );
+          if (emailRows.length > 0) {
+            return res.status(409).json({ message: 'Este email já está cadastrado.' });
+          }
+
+          updates.push('email = ?');
+          values.push(normalizedEmail);
+          nextEmail = normalizedEmail;
+          continue;
+        }
+
         if (field === 'tipo') {
           const validTipos = ['cliente', 'prestador'];
           if (req.currentUser.tipo === 'admin') {
@@ -276,8 +316,38 @@ app.patch(
 
     values.push(req.currentUser.id);
 
-    const pool = getPool();
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+
+    if (nextEmail !== currentEmail) {
+      await pool.query('UPDATE prestadores SET user_email = ? WHERE user_id = ? OR user_email = ?', [
+        nextEmail,
+        req.currentUser.id,
+        currentEmail,
+      ]);
+
+      await pool.query(
+        'UPDATE solicitacoes SET cliente_email = ? WHERE cliente_id = ? OR cliente_email = ?',
+        [nextEmail, req.currentUser.id, currentEmail]
+      );
+
+      await pool.query('UPDATE solicitacoes SET prestador_email = ? WHERE prestador_email = ?', [
+        nextEmail,
+        currentEmail,
+      ]);
+    }
+
+    if (nextName !== currentName) {
+      await pool.query('UPDATE solicitacoes SET cliente_nome = ? WHERE cliente_id = ? OR cliente_email = ?', [
+        nextName,
+        req.currentUser.id,
+        nextEmail,
+      ]);
+
+      await pool.query('UPDATE solicitacoes SET prestador_nome = ? WHERE prestador_email = ?', [
+        nextName,
+        nextEmail,
+      ]);
+    }
 
     const updatedUserRow = await getUserById(req.currentUser.id);
     const user = toPublicUser(updatedUserRow);
@@ -493,7 +563,7 @@ app.delete(
 app.get(
   '/api/prestadores',
   asyncHandler(async (req, res) => {
-    const allowedFilters = ['id', 'user_email', 'categoria_id', 'ativo', 'destaque'];
+    const allowedFilters = ['id', 'user_id', 'user_email', 'categoria_id', 'ativo', 'destaque'];
     const filters = [];
     const values = [];
 
@@ -659,7 +729,7 @@ app.patch(
       return res.status(404).json({ message: 'Prestador não encontrado.' });
     }
 
-    const isOwner = req.currentUser.email === existing.user_email;
+    const isOwner = req.currentUser.id === existing.user_id || req.currentUser.email === existing.user_email;
     const isAdmin = req.currentUser.tipo === 'admin';
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: 'Sem permissão para atualizar este prestador.' });
