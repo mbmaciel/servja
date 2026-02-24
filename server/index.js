@@ -25,6 +25,49 @@ const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const parseNullable = (value) => (value === '' ? null : value);
 const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object ?? {}, key);
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const isValidDateOnly = (value) => {
+  if (!DATE_ONLY_REGEX.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() + 1 === month &&
+    date.getUTCDate() === day
+  );
+};
+
+const normalizeDateOnly = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const raw = String(value).trim();
+  if (!raw) {
+    return null;
+  }
+
+  const datePrefixMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (datePrefixMatch?.[1] && isValidDateOnly(datePrefixMatch[1])) {
+    return datePrefixMatch[1];
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  const normalized = parsed.toISOString().slice(0, 10);
+  return isValidDateOnly(normalized) ? normalized : undefined;
+};
 
 const buildSortClause = (sortValue, allowedFields, fallbackField = 'created_date') => {
   const raw = typeof sortValue === 'string' && sortValue.length > 0 ? sortValue : `-${fallbackField}`;
@@ -352,6 +395,16 @@ app.patch(
           }
         }
 
+        if (field === 'data_nascimento') {
+          const normalizedDate = normalizeDateOnly(payload[field]);
+          if (normalizedDate === undefined) {
+            return res.status(400).json({ message: 'Data de nascimento inválida.' });
+          }
+          updates.push('data_nascimento = ?');
+          values.push(normalizedDate);
+          continue;
+        }
+
         updates.push(`${field} = ?`);
         values.push(payload[field] === '' ? null : payload[field]);
       }
@@ -537,6 +590,16 @@ app.patch(
         }
       }
 
+      if (field === 'data_nascimento') {
+        const normalizedDate = normalizeDateOnly(userPayload[field]);
+        if (normalizedDate === undefined) {
+          return res.status(400).json({ message: 'Data de nascimento inválida.' });
+        }
+        userUpdates.push('data_nascimento = ?');
+        userValues.push(normalizedDate);
+        continue;
+      }
+
       userUpdates.push(`${field} = ?`);
       userValues.push(parseNullable(userPayload[field]));
     }
@@ -657,7 +720,7 @@ app.patch(
             normalizeEmail(updatedUser.email),
             updatedUser.full_name,
             updatedUser.cpf || null,
-            updatedUser.data_nascimento || null,
+            normalizeDateOnly(updatedUser.data_nascimento) ?? null,
             telefonePrestador,
             updatedUser.nome_empresa || null,
             updatedUser.cnpj || null,
@@ -704,7 +767,7 @@ app.patch(
         setPrestadorField('user_email', normalizeEmail(updatedUser.email));
         setPrestadorField('nome', updatedUser.full_name || prestador.nome || null);
         setPrestadorField('cpf', updatedUser.cpf || null);
-        setPrestadorField('data_nascimento', updatedUser.data_nascimento || null);
+        setPrestadorField('data_nascimento', normalizeDateOnly(updatedUser.data_nascimento) ?? null);
         setPrestadorField('telefone', telefonePrestador);
         setPrestadorField('nome_empresa', updatedUser.nome_empresa || null);
         setPrestadorField('cnpj', updatedUser.cnpj || null);
@@ -1063,6 +1126,13 @@ app.post(
       ? JSON.stringify(payload.fotos_trabalhos)
       : JSON.stringify([]);
     const servicos = Array.isArray(payload.servicos) ? JSON.stringify(payload.servicos) : JSON.stringify([]);
+    const normalizedDataNascimento = hasOwn(payload, 'data_nascimento')
+      ? normalizeDateOnly(payload.data_nascimento)
+      : null;
+
+    if (normalizedDataNascimento === undefined) {
+      return res.status(400).json({ message: 'Data de nascimento inválida.' });
+    }
 
     const isAdmin = req.currentUser.tipo === 'admin';
     const ativoValue =
@@ -1117,7 +1187,7 @@ app.post(
         normalizedCurrentUserEmail,
         payload.nome,
         payload.cpf || null,
-        payload.data_nascimento || null,
+        normalizedDataNascimento,
         payload.telefone,
         payload.nome_empresa || null,
         payload.cnpj || null,
@@ -1253,6 +1323,16 @@ app.patch(
         if (field === 'servicos') {
           updates.push(`${field} = ?`);
           values.push(JSON.stringify(Array.isArray(payload[field]) ? payload[field] : []));
+          continue;
+        }
+
+        if (field === 'data_nascimento') {
+          const normalizedDate = normalizeDateOnly(payload[field]);
+          if (normalizedDate === undefined) {
+            return res.status(400).json({ message: 'Data de nascimento inválida.' });
+          }
+          updates.push('data_nascimento = ?');
+          values.push(normalizedDate);
           continue;
         }
 
