@@ -22,6 +22,9 @@ const parseBoolean = (value) => {
 };
 
 const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const parseNullable = (value) => (value === '' ? null : value);
+const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object ?? {}, key);
 
 const buildSortClause = (sortValue, allowedFields, fallbackField = 'created_date') => {
   const raw = typeof sortValue === 'string' && sortValue.length > 0 ? sortValue : `-${fallbackField}`;
@@ -51,6 +54,50 @@ const asyncHandler = (handler) => async (req, res, next) => {
 const getUserById = async (id) => {
   const pool = getPool();
   const [rows] = await pool.query('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
+  return rows[0] || null;
+};
+
+const getPrestadorByOwner = async (pool, userId, userEmail) => {
+  const normalizedEmail = normalizeEmail(userEmail);
+  const [rows] = await pool.query(
+    `SELECT * FROM prestadores
+     WHERE user_id = ? OR LOWER(TRIM(user_email)) = ?
+     ORDER BY CASE WHEN user_id = ? THEN 0 ELSE 1 END, created_date ASC
+     LIMIT 1`,
+    [userId, normalizedEmail, userId]
+  );
+
+  return rows[0] || null;
+};
+
+const resolveCategoriaNome = async (pool, categoriaId, fallbackName = null) => {
+  if (!categoriaId) {
+    return fallbackName || null;
+  }
+
+  const [categoriaRows] = await pool.query('SELECT nome FROM categorias WHERE id = ? LIMIT 1', [categoriaId]);
+  return categoriaRows[0]?.nome || fallbackName || null;
+};
+
+const syncPrestadorOwnership = async (pool, prestador, userId, userEmail) => {
+  const normalizedEmail = normalizeEmail(userEmail);
+  const currentPrestadorEmail = normalizeEmail(prestador?.user_email);
+
+  if (!prestador) {
+    return null;
+  }
+
+  if (prestador.user_id === userId && currentPrestadorEmail === normalizedEmail) {
+    return prestador;
+  }
+
+  await pool.query('UPDATE prestadores SET user_id = ?, user_email = ? WHERE id = ?', [
+    userId,
+    normalizedEmail,
+    prestador.id,
+  ]);
+
+  const [rows] = await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [prestador.id]);
   return rows[0] || null;
 };
 
@@ -319,10 +366,10 @@ app.patch(
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
 
     if (nextEmail !== currentEmail) {
-      await pool.query('UPDATE prestadores SET user_email = ? WHERE user_id = ? OR user_email = ?', [
+      await pool.query('UPDATE prestadores SET user_email = ? WHERE user_id = ? OR LOWER(TRIM(user_email)) = ?', [
         nextEmail,
         req.currentUser.id,
-        currentEmail,
+        normalizeEmail(currentEmail),
       ]);
 
       await pool.query(
@@ -353,6 +400,370 @@ app.patch(
     const user = toPublicUser(updatedUserRow);
 
     return res.json({ user });
+  })
+);
+
+app.get(
+  '/api/profile/prestador',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const pool = getPool();
+    const userRow = await getUserById(req.currentUser.id);
+
+    if (!userRow) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    const user = toPublicUser(userRow);
+    const ownPrestador = await getPrestadorByOwner(pool, user.id, user.email);
+    const prestador = await syncPrestadorOwnership(pool, ownPrestador, user.id, user.email);
+
+    return res.json({
+      user,
+      prestador: prestador ? serializeRow(prestador) : null,
+    });
+  })
+);
+
+app.patch(
+  '/api/profile/prestador',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const payload = req.body ?? {};
+    const userPayload =
+      payload.user && typeof payload.user === 'object' && !Array.isArray(payload.user) ? payload.user : {};
+    const rawPrestadorPayload = payload.prestador;
+    const prestadorPayload =
+      rawPrestadorPayload && typeof rawPrestadorPayload === 'object' && !Array.isArray(rawPrestadorPayload)
+        ? rawPrestadorPayload
+        : {};
+
+    const userAllowedFields = [
+      'full_name',
+      'email',
+      'telefone',
+      'cpf',
+      'cnpj',
+      'nome_empresa',
+      'data_nascimento',
+      'rua',
+      'numero',
+      'complemento',
+      'bairro',
+      'cidade',
+      'estado',
+      'cep',
+      'tipo',
+      'avatar',
+    ];
+
+    const prestadorAllowedFields = [
+      'tipo_empresa',
+      'descricao',
+      'servicos',
+      'valor_hora',
+      'preco_base',
+      'tempo_medio_atendimento',
+      'dias_disponiveis',
+      'horarios_disponiveis',
+      'raio_atendimento',
+      'foto',
+      'foto_facial',
+      'foto_documento',
+      'logo_empresa',
+      'fotos_trabalhos',
+      'latitude',
+      'longitude',
+    ];
+
+    const pool = getPool();
+    const currentUserRow = await getUserById(req.currentUser.id);
+
+    if (!currentUserRow) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    const currentName = currentUserRow.full_name;
+    const currentEmail = currentUserRow.email;
+    let nextName = currentName;
+    let nextEmail = currentEmail;
+    const userUpdates = [];
+    const userValues = [];
+
+    for (const field of userAllowedFields) {
+      if (!hasOwn(userPayload, field)) {
+        continue;
+      }
+
+      if (field === 'full_name') {
+        const normalizedName = String(userPayload[field] ?? '').trim();
+        if (!normalizedName) {
+          return res.status(400).json({ message: 'Nome é obrigatório.' });
+        }
+        userUpdates.push('full_name = ?');
+        userValues.push(normalizedName);
+        nextName = normalizedName;
+        continue;
+      }
+
+      if (field === 'email') {
+        const normalizedEmail = normalizeEmail(userPayload[field]);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+          return res.status(400).json({ message: 'Email inválido.' });
+        }
+
+        const [emailRows] = await pool.query('SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1', [
+          normalizedEmail,
+          req.currentUser.id,
+        ]);
+        if (emailRows.length > 0) {
+          return res.status(409).json({ message: 'Este email já está cadastrado.' });
+        }
+
+        userUpdates.push('email = ?');
+        userValues.push(normalizedEmail);
+        nextEmail = normalizedEmail;
+        continue;
+      }
+
+      if (field === 'tipo') {
+        const validTipos = ['cliente', 'prestador'];
+        if (currentUserRow.tipo === 'admin') {
+          validTipos.push('admin');
+        }
+        if (!validTipos.includes(userPayload[field])) {
+          return res.status(400).json({ message: 'Tipo de conta inválido.' });
+        }
+      }
+
+      userUpdates.push(`${field} = ?`);
+      userValues.push(parseNullable(userPayload[field]));
+    }
+
+    if (userUpdates.length > 0) {
+      userValues.push(req.currentUser.id);
+      await pool.query(`UPDATE users SET ${userUpdates.join(', ')} WHERE id = ?`, userValues);
+    }
+
+    if (nextEmail !== currentEmail) {
+      await pool.query('UPDATE prestadores SET user_email = ? WHERE user_id = ? OR LOWER(TRIM(user_email)) = ?', [
+        nextEmail,
+        req.currentUser.id,
+        normalizeEmail(currentEmail),
+      ]);
+
+      await pool.query('UPDATE solicitacoes SET cliente_email = ? WHERE cliente_id = ? OR cliente_email = ?', [
+        nextEmail,
+        req.currentUser.id,
+        currentEmail,
+      ]);
+
+      await pool.query('UPDATE solicitacoes SET prestador_email = ? WHERE prestador_email = ?', [
+        nextEmail,
+        currentEmail,
+      ]);
+    }
+
+    if (nextName !== currentName) {
+      await pool.query('UPDATE solicitacoes SET cliente_nome = ? WHERE cliente_id = ? OR cliente_email = ?', [
+        nextName,
+        req.currentUser.id,
+        nextEmail,
+      ]);
+
+      await pool.query('UPDATE solicitacoes SET prestador_nome = ? WHERE prestador_email = ?', [
+        nextName,
+        nextEmail,
+      ]);
+    }
+
+    const updatedUserRow = await getUserById(req.currentUser.id);
+    const updatedUser = toPublicUser(updatedUserRow);
+    let prestador = await getPrestadorByOwner(pool, updatedUser.id, updatedUser.email);
+    prestador = await syncPrestadorOwnership(pool, prestador, updatedUser.id, updatedUser.email);
+
+    if (updatedUser.tipo === 'prestador') {
+      const categoriaId = hasOwn(prestadorPayload, 'categoria_id')
+        ? parseNullable(prestadorPayload.categoria_id)
+        : prestador?.categoria_id || null;
+
+      if (!categoriaId) {
+        return res.status(400).json({ message: 'Selecione uma categoria para conta de prestador.' });
+      }
+
+      const categoriaNomeFallback = hasOwn(prestadorPayload, 'categoria_nome')
+        ? parseNullable(prestadorPayload.categoria_nome)
+        : prestador?.categoria_nome || null;
+      const categoriaNome = await resolveCategoriaNome(pool, categoriaId, categoriaNomeFallback);
+      const telefonePrestador =
+        updatedUser.telefone || parseNullable(prestadorPayload.telefone) || prestador?.telefone || null;
+
+      if (!telefonePrestador) {
+        return res.status(400).json({ message: 'Telefone é obrigatório para conta de prestador.' });
+      }
+
+      if (!prestador) {
+        const createdId = randomUUID();
+        const servicosValue = hasOwn(prestadorPayload, 'servicos')
+          ? JSON.stringify(Array.isArray(prestadorPayload.servicos) ? prestadorPayload.servicos : [])
+          : JSON.stringify([]);
+        const fotosTrabalhosValue = hasOwn(prestadorPayload, 'fotos_trabalhos')
+          ? JSON.stringify(Array.isArray(prestadorPayload.fotos_trabalhos) ? prestadorPayload.fotos_trabalhos : [])
+          : JSON.stringify([]);
+
+        await pool.query(
+          `INSERT INTO prestadores (
+            id,
+            user_id,
+            user_email,
+            nome,
+            cpf,
+            data_nascimento,
+            telefone,
+            nome_empresa,
+            cnpj,
+            tipo_empresa,
+            categoria_id,
+            categoria_nome,
+            descricao,
+            servicos,
+            valor_hora,
+            preco_base,
+            tempo_medio_atendimento,
+            dias_disponiveis,
+            horarios_disponiveis,
+            rua,
+            numero,
+            bairro,
+            cidade,
+            estado,
+            cep,
+            raio_atendimento,
+            foto,
+            foto_facial,
+            foto_documento,
+            logo_empresa,
+            fotos_trabalhos,
+            status_aprovacao,
+            ativo,
+            latitude,
+            longitude
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            createdId,
+            updatedUser.id,
+            normalizeEmail(updatedUser.email),
+            updatedUser.full_name,
+            updatedUser.cpf || null,
+            updatedUser.data_nascimento || null,
+            telefonePrestador,
+            updatedUser.nome_empresa || null,
+            updatedUser.cnpj || null,
+            parseNullable(prestadorPayload.tipo_empresa) || null,
+            categoriaId,
+            categoriaNome,
+            parseNullable(prestadorPayload.descricao) || null,
+            servicosValue,
+            parseNullable(prestadorPayload.valor_hora) || null,
+            parseNullable(prestadorPayload.preco_base) || null,
+            parseNullable(prestadorPayload.tempo_medio_atendimento) || null,
+            parseNullable(prestadorPayload.dias_disponiveis) || null,
+            parseNullable(prestadorPayload.horarios_disponiveis) || null,
+            updatedUser.rua || null,
+            updatedUser.numero || null,
+            updatedUser.bairro || null,
+            updatedUser.cidade || null,
+            updatedUser.estado || null,
+            updatedUser.cep || null,
+            parseNullable(prestadorPayload.raio_atendimento) || null,
+            parseNullable(prestadorPayload.foto) || null,
+            parseNullable(prestadorPayload.foto_facial) || null,
+            parseNullable(prestadorPayload.foto_documento) || null,
+            parseNullable(prestadorPayload.logo_empresa) || null,
+            fotosTrabalhosValue,
+            'pendente',
+            true,
+            parseNullable(prestadorPayload.latitude) || null,
+            parseNullable(prestadorPayload.longitude) || null,
+          ]
+        );
+
+        const [createdRows] = await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [createdId]);
+        prestador = createdRows[0] || null;
+      } else {
+        const prestadorUpdates = [];
+        const prestadorValues = [];
+        const setPrestadorField = (field, value) => {
+          prestadorUpdates.push(`${field} = ?`);
+          prestadorValues.push(value);
+        };
+
+        setPrestadorField('user_id', updatedUser.id);
+        setPrestadorField('user_email', normalizeEmail(updatedUser.email));
+        setPrestadorField('nome', updatedUser.full_name || prestador.nome || null);
+        setPrestadorField('cpf', updatedUser.cpf || null);
+        setPrestadorField('data_nascimento', updatedUser.data_nascimento || null);
+        setPrestadorField('telefone', telefonePrestador);
+        setPrestadorField('nome_empresa', updatedUser.nome_empresa || null);
+        setPrestadorField('cnpj', updatedUser.cnpj || null);
+        setPrestadorField('rua', updatedUser.rua || null);
+        setPrestadorField('numero', updatedUser.numero || null);
+        setPrestadorField('bairro', updatedUser.bairro || null);
+        setPrestadorField('cidade', updatedUser.cidade || null);
+        setPrestadorField('estado', updatedUser.estado || null);
+        setPrestadorField('cep', updatedUser.cep || null);
+        setPrestadorField('categoria_id', categoriaId);
+        setPrestadorField('categoria_nome', categoriaNome);
+        setPrestadorField('ativo', true);
+
+        for (const field of prestadorAllowedFields) {
+          if (!hasOwn(prestadorPayload, field)) {
+            continue;
+          }
+
+          if (field === 'servicos' || field === 'fotos_trabalhos') {
+            setPrestadorField(field, JSON.stringify(Array.isArray(prestadorPayload[field]) ? prestadorPayload[field] : []));
+            continue;
+          }
+
+          setPrestadorField(field, parseNullable(prestadorPayload[field]));
+        }
+
+        prestadorValues.push(prestador.id);
+        await pool.query(`UPDATE prestadores SET ${prestadorUpdates.join(', ')} WHERE id = ?`, prestadorValues);
+
+        const [updatedPrestadorRows] = await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [
+          prestador.id,
+        ]);
+        prestador = updatedPrestadorRows[0] || null;
+      }
+    } else if (prestador) {
+      const telefoneFallback = updatedUser.telefone || prestador.telefone;
+      await pool.query(
+        `UPDATE prestadores
+         SET user_id = ?, user_email = ?, nome = ?, telefone = ?, ativo = FALSE
+         WHERE id = ?`,
+        [
+          updatedUser.id,
+          normalizeEmail(updatedUser.email),
+          updatedUser.full_name || prestador.nome,
+          telefoneFallback,
+          prestador.id,
+        ]
+      );
+
+      const [updatedPrestadorRows] = await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [
+        prestador.id,
+      ]);
+      prestador = updatedPrestadorRows[0] || null;
+    }
+
+    return res.json({
+      user: updatedUser,
+      prestador: prestador ? serializeRow(prestador) : null,
+    });
   })
 );
 
@@ -433,10 +844,10 @@ app.patch(
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
 
     if (hasAtivo) {
-      await pool.query('UPDATE prestadores SET ativo = ? WHERE user_id = ? OR user_email = ?', [
+      await pool.query('UPDATE prestadores SET ativo = ? WHERE user_id = ? OR LOWER(TRIM(user_email)) = ?', [
         ativo,
         id,
-        existing.email,
+        normalizeEmail(existing.email),
       ]);
     }
 
@@ -575,6 +986,9 @@ app.get(
             filters.push(`${key} = ?`);
             values.push(boolValue);
           }
+        } else if (key === 'user_email') {
+          filters.push('LOWER(TRIM(user_email)) = ?');
+          values.push(normalizeEmail(req.query[key]));
         } else {
           filters.push(`${key} = ?`);
           values.push(req.query[key]);
@@ -611,6 +1025,34 @@ app.post(
 
     const pool = getPool();
     const id = randomUUID();
+    const normalizedCurrentUserEmail = normalizeEmail(req.currentUser.email);
+    const existingPrestador = await getPrestadorByOwner(
+      pool,
+      req.currentUser.id,
+      normalizedCurrentUserEmail
+    );
+
+    if (existingPrestador) {
+      const existingUserEmail = normalizeEmail(existingPrestador.user_email);
+
+      if (
+        existingPrestador.user_id !== req.currentUser.id ||
+        existingUserEmail !== normalizedCurrentUserEmail
+      ) {
+        await pool.query('UPDATE prestadores SET user_id = ?, user_email = ? WHERE id = ?', [
+          req.currentUser.id,
+          normalizedCurrentUserEmail,
+          existingPrestador.id,
+        ]);
+
+        const [updatedRows] = await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [
+          existingPrestador.id,
+        ]);
+        return res.status(200).json({ item: serializeRow(updatedRows[0]) });
+      }
+
+      return res.status(200).json({ item: serializeRow(existingPrestador) });
+    }
 
     const [categoriaRows] = await pool.query('SELECT nome FROM categorias WHERE id = ? LIMIT 1', [
       payload.categoria_id,
@@ -672,7 +1114,7 @@ app.post(
       [
         id,
         req.currentUser.id,
-        req.currentUser.email,
+        normalizedCurrentUserEmail,
         payload.nome,
         payload.cpf || null,
         payload.data_nascimento || null,
@@ -729,10 +1171,30 @@ app.patch(
       return res.status(404).json({ message: 'Prestador não encontrado.' });
     }
 
-    const isOwner = req.currentUser.id === existing.user_id || req.currentUser.email === existing.user_email;
+    const currentUserEmail = normalizeEmail(req.currentUser.email);
+    const existingUserEmail = normalizeEmail(existing.user_email);
+    const isOwnerById = Boolean(existing.user_id) && req.currentUser.id === existing.user_id;
+    const isOwnerByEmail =
+      Boolean(currentUserEmail) && Boolean(existingUserEmail) && currentUserEmail === existingUserEmail;
+    const isOwner = isOwnerById || isOwnerByEmail;
     const isAdmin = req.currentUser.tipo === 'admin';
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: 'Sem permissão para atualizar este prestador.' });
+    }
+
+    if (
+      isOwner &&
+      Boolean(currentUserEmail) &&
+      (existing.user_id !== req.currentUser.id || existingUserEmail !== currentUserEmail)
+    ) {
+      await pool.query('UPDATE prestadores SET user_id = ?, user_email = ? WHERE id = ?', [
+        req.currentUser.id,
+        currentUserEmail,
+        id,
+      ]);
+
+      existing.user_id = req.currentUser.id;
+      existing.user_email = currentUserEmail;
     }
 
     const payload = req.body ?? {};
@@ -817,10 +1279,10 @@ app.patch(
     if (isAdmin && Object.prototype.hasOwnProperty.call(payload, 'ativo')) {
       const ativo = parseBoolean(payload.ativo);
       if (typeof ativo === 'boolean') {
-        await pool.query('UPDATE users SET ativo = ? WHERE id = ? OR email = ?', [
+        await pool.query('UPDATE users SET ativo = ? WHERE id = ? OR LOWER(TRIM(email)) = ?', [
           ativo,
           existing.user_id,
-          existing.user_email,
+          normalizeEmail(existing.user_email),
         ]);
       }
     }
@@ -853,18 +1315,18 @@ app.get(
     }
 
     if (req.currentUser.tipo !== 'admin') {
-      const userEmail = req.currentUser.email;
+      const userEmail = normalizeEmail(req.currentUser.email);
 
-      if (req.query.cliente_email && req.query.cliente_email !== userEmail) {
+      if (req.query.cliente_email && normalizeEmail(req.query.cliente_email) !== userEmail) {
         return res.status(403).json({ message: 'Sem permissão para esta consulta.' });
       }
 
-      if (req.query.prestador_email && req.query.prestador_email !== userEmail) {
+      if (req.query.prestador_email && normalizeEmail(req.query.prestador_email) !== userEmail) {
         return res.status(403).json({ message: 'Sem permissão para esta consulta.' });
       }
 
       if (!req.query.cliente_email && !req.query.prestador_email) {
-        filters.push('(cliente_email = ? OR prestador_email = ?)');
+        filters.push('(LOWER(TRIM(cliente_email)) = ? OR LOWER(TRIM(prestador_email)) = ?)');
         values.push(userEmail, userEmail);
       }
     }

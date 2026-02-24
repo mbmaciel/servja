@@ -48,6 +48,8 @@ const iconOptions = [
   'Flower', 'Key', 'Dumbbell', 'GraduationCap', 'Hand', 'Scissors', 'User'
 ];
 
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
 export default function Admin() {
   const [user, setUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -93,7 +95,9 @@ export default function Admin() {
         prestadoresData.filter((item) => item.user_id).map((item) => [item.user_id, item])
       );
       const prestadorProfileByEmail = new Map(
-        prestadoresData.filter((item) => item.user_email).map((item) => [item.user_email, item])
+        prestadoresData
+          .filter((item) => item.user_email)
+          .map((item) => [normalizeEmail(item.user_email), item])
       );
 
       const prestadoresReais = usersData
@@ -101,13 +105,13 @@ export default function Admin() {
         .map((item) => {
           const perfil =
             prestadorProfileByUserId.get(item.id) ||
-            prestadorProfileByEmail.get(item.email) ||
+            prestadorProfileByEmail.get(normalizeEmail(item.email)) ||
             null;
 
           return {
             id: item.id,
             user_id: item.id,
-            user_email: item.email,
+            user_email: normalizeEmail(item.email),
             nome: perfil?.nome || item.full_name,
             categoria_nome: perfil?.categoria_nome || null,
             cidade: perfil?.cidade || item.cidade || null,

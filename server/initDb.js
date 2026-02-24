@@ -142,6 +142,35 @@ const defaultUsers = [
   },
 ];
 
+const normalizeLegacyOwnershipData = async (pool) => {
+  await pool.query(
+    'UPDATE users SET email = LOWER(TRIM(email)) WHERE email IS NOT NULL AND email <> LOWER(TRIM(email))'
+  );
+
+  await pool.query(
+    `UPDATE prestadores
+     SET user_email = LOWER(TRIM(user_email))
+     WHERE user_email IS NOT NULL AND user_email <> LOWER(TRIM(user_email))`
+  );
+
+  await pool.query(
+    `UPDATE prestadores p
+     JOIN users u ON p.user_id = u.id
+     SET p.user_email = LOWER(TRIM(u.email))
+     WHERE p.user_id IS NOT NULL
+       AND (p.user_email IS NULL OR LOWER(TRIM(p.user_email)) <> LOWER(TRIM(u.email)))`
+  );
+
+  await pool.query(
+    `UPDATE prestadores p
+     JOIN users u ON LOWER(TRIM(p.user_email)) = LOWER(TRIM(u.email))
+     SET p.user_id = u.id,
+         p.user_email = LOWER(TRIM(u.email))
+     WHERE p.user_email IS NOT NULL
+       AND (p.user_id IS NULL OR p.user_id <> u.id OR p.user_email <> LOWER(TRIM(u.email)))`
+  );
+};
+
 export const initializeDatabase = async () => {
   const connection = await mysql.createConnection({
     host: config.db.host,
@@ -227,6 +256,8 @@ const seedDatabase = async () => {
       ]
     );
   }
+
+  await normalizeLegacyOwnershipData(pool);
 
   const [categoryCountRows] = await pool.query('SELECT COUNT(*) AS total FROM categorias');
   const categoryCount = categoryCountRows[0]?.total ?? 0;

@@ -118,8 +118,22 @@ const auth = {
   },
 };
 
+const profile = {
+  async getPrestador() {
+    return apiRequest('/api/profile/prestador', { auth: true });
+  },
+  async savePrestador(payload) {
+    return apiRequest('/api/profile/prestador', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      auth: true,
+    });
+  },
+};
+
 export const base44 = {
   auth,
+  profile,
   entities: {
     Categoria: createEntityClient('categorias'),
     Prestador: createEntityClient('prestadores'),

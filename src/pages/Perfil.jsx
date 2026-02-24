@@ -70,14 +70,12 @@ export default function Perfil() {
   const loadUser = async () => {
     setIsLoading(true);
     try {
-      const userData = await base44.auth.me();
-      const [categoriasData, prestadoresByUserId, prestadoresByEmail] = await Promise.all([
+      const [categoriasData, profileData] = await Promise.all([
         base44.entities.Categoria.filter({ ativo: true }),
-        base44.entities.Prestador.filter({ user_id: userData.id }),
-        base44.entities.Prestador.filter({ user_email: userData.email })
+        base44.profile.getPrestador(),
       ]);
-
-      const prestadorData = prestadoresByUserId[0] || prestadoresByEmail[0] || null;
+      const userData = profileData?.user || null;
+      const prestadorData = profileData?.prestador || null;
 
       setUser(userData);
       setCategorias(categoriasData);
@@ -165,35 +163,22 @@ export default function Perfil() {
         tipo: formData.tipo
       };
 
-      const updatedUser = await base44.auth.updateMe(userPayload);
-      setUser(updatedUser);
+      const categoriaSelecionada = categorias.find(c => c.id === formData.categoria_id);
+      const precoBaseNumero = formData.preco_base === '' ? null : Number(formData.preco_base);
+      const profileData = await base44.profile.savePrestador({
+        user: userPayload,
+        prestador:
+          formData.tipo === 'prestador'
+            ? {
+                categoria_id: formData.categoria_id,
+                categoria_nome: categoriaSelecionada?.nome || '',
+                preco_base: precoBaseNumero
+              }
+            : null,
+      });
 
-      if (formData.tipo === 'prestador') {
-        const categoriaSelecionada = categorias.find(c => c.id === formData.categoria_id);
-        const precoBaseNumero =
-          formData.preco_base === '' ? null : Number(formData.preco_base);
-        const prestadorPayload = {
-          user_id: updatedUser?.id || user?.id,
-          user_email: updatedUser?.email || trimmedEmail,
-          nome: updatedUser?.full_name || trimmedName,
-          categoria_id: formData.categoria_id,
-          categoria_nome: categoriaSelecionada?.nome || '',
-          telefone: formData.telefone,
-          cidade: formData.cidade || '',
-          preco_base: precoBaseNumero
-        };
-
-        if (prestadorPerfil?.id) {
-          const updatedPrestador = await base44.entities.Prestador.update(
-            prestadorPerfil.id,
-            prestadorPayload
-          );
-          setPrestadorPerfil(updatedPrestador || prestadorPerfil);
-        } else {
-          const createdPrestador = await base44.entities.Prestador.create(prestadorPayload);
-          setPrestadorPerfil(createdPrestador || null);
-        }
-      }
+      setUser(profileData?.user || null);
+      setPrestadorPerfil(profileData?.prestador || null);
 
       toast.success('Perfil atualizado com sucesso!');
       loadUser();

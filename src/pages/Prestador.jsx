@@ -37,27 +37,29 @@ export default function Prestador() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const userData = await base44.auth.me();
+      const profileData = await base44.profile.getPrestador();
+      const userData = profileData?.user || null;
+      const prestadorData = profileData?.prestador || null;
+
+      if (!userData) {
+        throw new Error('Usuário não autenticado.');
+      }
+
       setUser(userData);
+      const userEmail = String(userData.email || '').trim().toLowerCase();
 
       if (userData.tipo !== 'prestador') {
         toast.error('Você precisa ser um prestador para acessar esta página. Atualize seu perfil primeiro.');
         return;
       }
 
-      const [prestadoresData, solicitacoesData] = await Promise.all([
-        base44.entities.Prestador.filter({ user_email: userData.email }),
-        base44.entities.Solicitacao.filter({ prestador_email: userData.email }, '-created_date')
-      ]);
+      const solicitacoesData = await base44.entities.Solicitacao.filter(
+        { prestador_email: userEmail },
+        '-created_date'
+      );
 
       setSolicitacoes(solicitacoesData);
-
-      if (prestadoresData.length > 0) {
-        const p = prestadoresData[0];
-        setPrestador(p);
-      } else {
-        setPrestador(null);
-      }
+      setPrestador(prestadorData);
     } catch (error) {
       toast.error('Você precisa estar logado');
       base44.auth.redirectToLogin();
