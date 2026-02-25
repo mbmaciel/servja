@@ -131,9 +131,70 @@ const profile = {
   },
 };
 
+const atividades = {
+  async list(filters = {}, sort) {
+    const query = createQueryString({ ...filters, sort });
+    const response = await apiRequest(`/api/atividades${query}`, { auth: true });
+    return response.items;
+  },
+  async create(payload) {
+    const response = await apiRequest('/api/atividades', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      auth: true,
+    });
+    return response.item;
+  },
+  async update(id, payload) {
+    const response = await apiRequest(`/api/atividades/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      auth: true,
+    });
+    return response.item;
+  },
+  async delete(id) {
+    await apiRequest(`/api/atividades/${id}`, { method: 'DELETE', auth: true });
+  },
+  async listAnexos(atividadeId) {
+    const response = await apiRequest(`/api/atividades/${atividadeId}/anexos`, { auth: true });
+    return response.items;
+  },
+  async uploadAnexo(atividadeId, file) {
+    const form = new FormData();
+    form.append('arquivo', file);
+    const token = tokenStorage.get();
+    const res = await fetch(`/api/atividades/${atividadeId}/anexos`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      const err = new Error(payload?.message || 'Erro no upload.');
+      err.status = res.status;
+      throw err;
+    }
+    return (await res.json()).item;
+  },
+  async deleteAnexo(anexoId) {
+    await apiRequest(`/api/atividades/file/${anexoId}`, { method: 'DELETE', auth: true });
+  },
+  async downloadAnexo(anexoId) {
+    const token = tokenStorage.get();
+    const res = await fetch(`/api/atividades/file/${anexoId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Erro ao baixar arquivo.');
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
+};
+
 export const base44 = {
   auth,
   profile,
+  atividades,
   entities: {
     Categoria: createEntityClient('categorias'),
     Prestador: createEntityClient('prestadores'),

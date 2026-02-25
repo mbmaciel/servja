@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { 
+import {
   Loader2, Users, Briefcase, Tag, Plus, Save, Trash2,
   CheckCircle, XCircle, Star, Shield, RefreshCw, Edit, Search,
-  FileText, TrendingUp, DollarSign, Clock
+  FileText, TrendingUp, DollarSign, Clock, ClipboardList
 } from 'lucide-react';
+import AtividadesTab from '@/components/servija/AtividadesTab';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -496,7 +497,7 @@ export default function Admin() {
 
         {/* Tabs */}
         <Tabs defaultValue="prestadores" className="space-y-6">
-          <TabsList className="bg-white border border-gray-200">
+          <TabsList className="bg-white border border-gray-200 flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="prestadores">
               <Briefcase className="w-4 h-4 mr-2" />
               Prestadores
@@ -516,6 +517,10 @@ export default function Admin() {
             <TabsTrigger value="categorias">
               <Tag className="w-4 h-4 mr-2" />
               Categorias
+            </TabsTrigger>
+            <TabsTrigger value="atividades">
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Atividades
             </TabsTrigger>
           </TabsList>
 
@@ -867,6 +872,22 @@ export default function Admin() {
                     </TableBody>
                   </Table>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Atividades do sistema ───────────────────────────── */}
+          <TabsContent value="atividades">
+            <Card>
+              <CardHeader>
+                <CardTitle>Atividades do Sistema</CardTitle>
+                <CardDescription>
+                  Gerencie as funcionalidades e melhorias a serem implementadas.
+                  Registre ideias, organize por módulo e acompanhe o desenvolvimento.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AtividadesTab />
               </CardContent>
             </Card>
           </TabsContent>

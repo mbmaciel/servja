@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { createAuthToken, verifyAuthToken } from './auth.js';
 import { closePool, getPool } from './db.js';
 import { initializeDatabase } from './initDb.js';
+import { router as atividadesRouter, initAtividadesTable } from './routes/atividades.js';
 import { serializeRow, serializeRows, toPublicUser } from './serializers.js';
 
 const app = express();
@@ -1531,6 +1532,9 @@ app.patch(
   })
 );
 
+// ─── Atividades (backlog dev/cliente) ────────────────────────────────────────
+app.use('/api/atividades', requireAuth, requireAdmin, atividadesRouter);
+
 app.post('/api/events', (_req, res) => {
   res.status(204).end();
 });
@@ -1565,6 +1569,7 @@ const maybeServeStatic = () => {
 
 const startServer = async () => {
   await initializeDatabase();
+  await initAtividadesTable();
   maybeServeStatic();
 
   app.listen(config.port, () => {
