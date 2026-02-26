@@ -9,6 +9,8 @@ import { closePool, getPool } from './db.js';
 import { initializeDatabase } from './initDb.js';
 import { router as atividadesRouter, initAtividadesTable } from './routes/atividades.js';
 import { serializeRow, serializeRows, toPublicUser } from './serializers.js';
+import { geocodeByCep } from './services/geocodeService.js';
+import { sendWelcomeEmail, notifyAdmins } from './services/emailService.js';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -198,7 +200,11 @@ app.get('/api/health', (_req, res) => {
 app.post(
   '/api/auth/register',
   asyncHandler(async (req, res) => {
-    const { full_name, email, password, tipo, cpf, cnpj, nome_empresa } = req.body ?? {};
+    const {
+      full_name, email, password, tipo,
+      telefone, cep,
+      rua, bairro, cidade, estado, numero, complemento,
+    } = req.body ?? {};
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
@@ -209,49 +215,53 @@ app.post(
       return res.status(400).json({ message: 'Tipo de conta inválido.' });
     }
 
-    const normalizedTipo = tipo === 'prestador' ? 'prestador' : 'cliente';
-    const cpfValue = String(cpf || '').trim();
-    const cnpjValue = String(cnpj || '').trim();
-    const nomeEmpresaValue = String(nome_empresa || '').trim();
-    const ativoValue = normalizedTipo === 'prestador' ? false : true;
-
-    if (!cpfValue) {
-      return res.status(400).json({ message: 'CPF é obrigatório.' });
-    }
-    if (onlyDigits(cpfValue).length !== 11) {
-      return res.status(400).json({ message: 'CPF inválido.' });
-    }
-
-    if (cnpjValue && onlyDigits(cnpjValue).length !== 14) {
-      return res.status(400).json({ message: 'CNPJ inválido.' });
-    }
-
-    if (normalizedTipo === 'prestador' && !nomeEmpresaValue) {
-      return res.status(400).json({ message: 'Nome da empresa é obrigatório para prestador.' });
-    }
-
     if (String(password).length < 6) {
       return res.status(400).json({ message: 'A senha precisa ter pelo menos 6 caracteres.' });
     }
 
+    const telefoneValue = String(telefone || '').trim();
+    if (!telefoneValue) {
+      return res.status(400).json({ message: 'Telefone é obrigatório.' });
+    }
+
+    const cepDigits = onlyDigits(cep || '');
+    if (cepDigits.length < 8) {
+      return res.status(400).json({ message: 'CEP é obrigatório.' });
+    }
+
+    const normalizedTipo = tipo === 'prestador' ? 'prestador' : 'cliente';
+    const ruaValue = String(rua || '').trim() || null;
+    const bairroValue = String(bairro || '').trim() || null;
+    const cidadeValue = String(cidade || '').trim() || null;
+    const estadoValue = String(estado || '').trim().toUpperCase() || null;
+    const numeroValue = String(numero || '').trim() || null;
+    const complementoValue = String(complemento || '').trim() || null;
+
     const pool = getPool();
     const userId = randomUUID();
     const passwordHash = await bcrypt.hash(String(password), 10);
+    const plainPassword = String(password);
 
     try {
       await pool.query(
-        `INSERT INTO users (id, full_name, email, password_hash, tipo, cpf, cnpj, nome_empresa, ativo)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users
+          (id, full_name, email, password_hash, tipo, ativo,
+           telefone, cep, rua, bairro, cidade, estado, numero, complemento)
+         VALUES (?, ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
           String(full_name).trim(),
           String(email).trim().toLowerCase(),
           passwordHash,
           normalizedTipo,
-          cpfValue,
-          cnpjValue || null,
-          normalizedTipo === 'prestador' ? nomeEmpresaValue : null,
-          ativoValue,
+          telefoneValue,
+          cepDigits,
+          ruaValue,
+          bairroValue,
+          cidadeValue,
+          estadoValue,
+          numeroValue,
+          complementoValue,
         ]
       );
     } catch (error) {
@@ -264,7 +274,35 @@ app.post(
 
     const userRow = await getUserById(userId);
     const user = toPublicUser(userRow);
-    const token = ativoValue ? createAuthToken(user) : null;
+    const token = createAuthToken(user);
+
+    // Geocodificação e emails em background — não bloqueiam a resposta
+    setImmediate(async () => {
+      try {
+        const coords = await geocodeByCep({
+          rua: ruaValue,
+          bairro: bairroValue,
+          cidade: cidadeValue,
+          estado: estadoValue,
+          cep: cepDigits,
+        });
+        if (coords) {
+          await pool.query(
+            'UPDATE prestadores SET latitude = ?, longitude = ? WHERE user_id = ?',
+            [coords.latitude, coords.longitude, userId]
+          );
+        }
+      } catch (err) {
+        console.error('[register] Geocodificação falhou:', err.message);
+      }
+
+      try {
+        await sendWelcomeEmail(userRow, plainPassword);
+        await notifyAdmins(pool, userRow);
+      } catch (err) {
+        console.error('[register] Email falhou:', err.message);
+      }
+    });
 
     return res.status(201).json({ user, token });
   })
@@ -917,6 +955,40 @@ app.patch(
 
     const updatedUserRow = await getUserById(id);
     return res.json({ item: toPublicUser(updatedUserRow) });
+  })
+);
+
+app.delete(
+  '/api/users/:id',
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const pool = getPool();
+
+    if (id === req.currentUser.id) {
+      return res.status(400).json({ message: 'Você não pode excluir sua própria conta.' });
+    }
+
+    const [existingRows] = await pool.query('SELECT id, tipo FROM users WHERE id = ? LIMIT 1', [id]);
+    const existing = existingRows[0];
+
+    if (!existing) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    if (existing.tipo === 'admin') {
+      const [countRows] = await pool.query("SELECT COUNT(*) AS total FROM users WHERE tipo = 'admin'");
+      if ((countRows[0]?.total ?? 0) <= 1) {
+        return res.status(400).json({ message: 'Não é possível excluir o último administrador.' });
+      }
+    }
+
+    // Remove perfil de prestador vinculado antes de deletar o usuário
+    await pool.query('DELETE FROM prestadores WHERE user_id = ?', [id]);
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+
+    return res.status(204).end();
   })
 );
 

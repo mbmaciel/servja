@@ -191,10 +191,17 @@ const atividades = {
   },
 };
 
+const users = {
+  async deleteUser(id) {
+    await apiRequest(`/api/users/${id}`, { method: 'DELETE', auth: true });
+  },
+};
+
 export const base44 = {
   auth,
   profile,
   atividades,
+  users,
   entities: {
     Categoria: createEntityClient('categorias'),
     Prestador: createEntityClient('prestadores'),

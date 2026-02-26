@@ -35,6 +35,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -62,6 +72,7 @@ export default function Admin() {
   const [showCategoriaModal, setShowCategoriaModal] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const [categoriaForm, setCategoriaForm] = useState({
     nome: '',
@@ -243,6 +254,21 @@ export default function Admin() {
       loadData();
     } catch (error) {
       toast.error(error.message || 'Erro ao atualizar perfil do usuário');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsUpdating(true);
+    try {
+      await base44.users.deleteUser(userToDelete.id);
+      toast.success(`Usuário "${userToDelete.full_name}" excluído.`);
+      setUserToDelete(null);
+      loadData();
+    } catch (error) {
+      toast.error(error.message || 'Erro ao excluir usuário.');
     } finally {
       setIsUpdating(false);
     }
@@ -573,18 +599,28 @@ export default function Admin() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleTogglePrestadorAtivo(prestador)}
-                              disabled={isUpdating}
-                            >
-                              {prestador.ativo ? (
-                                <XCircle className="w-4 h-4 text-red-500" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                              )}
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTogglePrestadorAtivo(prestador)}
+                                disabled={isUpdating}
+                              >
+                                {prestador.ativo ? (
+                                  <XCircle className="w-4 h-4 text-red-500" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUserToDelete({ id: prestador.user_id, full_name: prestador.nome })}
+                                disabled={isUpdating}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -681,14 +717,24 @@ export default function Admin() {
                           <TableCell>{u.email}</TableCell>
                           <TableCell>{u.cidade || '-'}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleChangeUserType(u, 'admin')}
-                              disabled={isUpdating}
-                            >
-                              <Shield className="w-4 h-4 text-purple-600" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleChangeUserType(u, 'admin')}
+                                disabled={isUpdating}
+                              >
+                                <Shield className="w-4 h-4 text-purple-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUserToDelete(u)}
+                                disabled={isUpdating}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -733,14 +779,24 @@ export default function Admin() {
                           </TableCell>
                           <TableCell>{u.cidade || '-'}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleChangeUserType(u, 'cliente')}
-                              disabled={isUpdating || totalAdmins <= 1}
-                            >
-                              <Users className="w-4 h-4 text-blue-600" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleChangeUserType(u, 'cliente')}
+                                disabled={isUpdating || totalAdmins <= 1}
+                              >
+                                <Users className="w-4 h-4 text-blue-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUserToDelete(u)}
+                                disabled={isUpdating || totalAdmins <= 1}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -893,6 +949,30 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* AlertDialog: confirmar exclusão de usuário */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => { if (!open) setUserToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário <strong>{userToDelete?.full_name}</strong>?
+              Esta ação é irreversível e removerá todos os dados vinculados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdating}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isUpdating}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

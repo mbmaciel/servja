@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Loader2, LogIn, UserPlus } from 'lucide-react';
+import { Loader2, LogIn, MapPin, UserPlus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,21 @@ const getRedirectTarget = (search) => {
 
 const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
 
+const INITIAL_REGISTER = {
+  full_name: '',
+  email: '',
+  password: '',
+  tipo: 'cliente',
+  telefone: '',
+  cep: '',
+  rua: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
+  numero: '',
+  complemento: '',
+};
+
 export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -52,16 +67,9 @@ export default function Login() {
   const redirectTo = useMemo(() => getRedirectTarget(location.search), [location.search]);
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({
-    full_name: '',
-    email: '',
-    password: '',
-    tipo: 'cliente',
-    cpf: '',
-    cnpj: '',
-    nome_empresa: '',
-  });
+  const [registerForm, setRegisterForm] = useState(INITIAL_REGISTER);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -78,51 +86,70 @@ export default function Login() {
     }
   };
 
+  const fetchCep = async (cepValue) => {
+    const digits = onlyDigits(cepValue);
+    if (digits.length !== 8) return;
+
+    setIsFetchingCep(true);
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${digits}`);
+      if (!response.ok) {
+        toast.error('CEP não encontrado. Preencha o endereço manualmente.');
+        return;
+      }
+      const data = await response.json();
+      setRegisterForm((prev) => ({
+        ...prev,
+        rua: data.street || prev.rua,
+        bairro: data.neighborhood || prev.bairro,
+        cidade: data.city || prev.cidade,
+        estado: data.state || prev.estado,
+      }));
+    } catch {
+      // Silencioso: usuário preenche manualmente
+    } finally {
+      setIsFetchingCep(false);
+    }
+  };
+
   const handleRegister = async (event) => {
     event.preventDefault();
-
-    const tipo = registerForm.tipo === 'prestador' ? 'prestador' : 'cliente';
-    const cpfDigits = onlyDigits(registerForm.cpf);
-    const cnpjDigits = onlyDigits(registerForm.cnpj);
 
     if (registerForm.password.length < 6) {
       toast.error('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
-    if (cpfDigits.length !== 11) {
-      toast.error('Informe um CPF válido.');
+    if (!registerForm.telefone.trim()) {
+      toast.error('Telefone é obrigatório.');
       return;
     }
 
-    if (cnpjDigits.length > 0 && cnpjDigits.length !== 14) {
-      toast.error('Informe um CNPJ válido.');
-      return;
-    }
-
-    if (tipo === 'prestador' && !registerForm.nome_empresa.trim()) {
-      toast.error('Informe o nome da empresa para prestador.');
+    const cepDigits = onlyDigits(registerForm.cep);
+    if (cepDigits.length < 8) {
+      toast.error('CEP é obrigatório (8 dígitos).');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const createdUser = await base44.auth.register({
+      await base44.auth.register({
         full_name: registerForm.full_name,
         email: registerForm.email,
         password: registerForm.password,
-        tipo,
-        cpf: registerForm.cpf,
-        cnpj: registerForm.cnpj,
-        nome_empresa: tipo === 'prestador' ? registerForm.nome_empresa.trim() : null,
+        tipo: registerForm.tipo,
+        telefone: registerForm.telefone.trim(),
+        cep: cepDigits,
+        rua: registerForm.rua.trim() || null,
+        bairro: registerForm.bairro.trim() || null,
+        cidade: registerForm.cidade.trim() || null,
+        estado: registerForm.estado.trim() || null,
+        numero: registerForm.numero.trim() || null,
+        complemento: registerForm.complemento.trim() || null,
       });
 
-      if (createdUser?.tipo === 'prestador' && createdUser?.ativo === false) {
-        toast.success('Conta de prestador criada. Aguarde ativação do administrador.');
-      } else {
-        toast.success('Conta criada com sucesso.');
-      }
+      toast.success('Conta criada! Verifique seu email e faça login.');
       navigate(redirectTo, { replace: true });
     } catch (error) {
       toast.error(error.message || 'Não foi possível criar a conta.');
@@ -130,6 +157,9 @@ export default function Login() {
       setIsSubmitting(false);
     }
   };
+
+  const setField = (field) => (event) =>
+    setRegisterForm((prev) => ({ ...prev, [field]: event.target.value }));
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -147,6 +177,7 @@ export default function Login() {
               <TabsTrigger value="register">Cadastrar</TabsTrigger>
             </TabsList>
 
+            {/* ── LOGIN ─────────────────────────────────────────────── */}
             <TabsContent value="login">
               <form className="space-y-4" onSubmit={handleLogin}>
                 <div className="space-y-2">
@@ -154,9 +185,7 @@ export default function Login() {
                   <Input
                     type="email"
                     value={loginForm.email}
-                    onChange={(event) =>
-                      setLoginForm((prev) => ({ ...prev, email: event.target.value }))
-                    }
+                    onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))}
                     required
                   />
                 </div>
@@ -166,9 +195,7 @@ export default function Login() {
                   <Input
                     type="password"
                     value={loginForm.password}
-                    onChange={(event) =>
-                      setLoginForm((prev) => ({ ...prev, password: event.target.value }))
-                    }
+                    onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
                     required
                   />
                 </div>
@@ -184,41 +211,38 @@ export default function Login() {
               </form>
             </TabsContent>
 
+            {/* ── CADASTRO ──────────────────────────────────────────── */}
             <TabsContent value="register">
               <form className="space-y-4" onSubmit={handleRegister}>
+                {/* Nome */}
                 <div className="space-y-2">
-                  <Label>Nome completo</Label>
+                  <Label>Nome completo *</Label>
                   <Input
                     value={registerForm.full_name}
-                    onChange={(event) =>
-                      setRegisterForm((prev) => ({ ...prev, full_name: event.target.value }))
-                    }
+                    onChange={setField('full_name')}
+                    placeholder="Seu nome completo"
                     required
                   />
                 </div>
 
+                {/* Email */}
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <Label>Email *</Label>
                   <Input
                     type="email"
                     value={registerForm.email}
-                    onChange={(event) =>
-                      setRegisterForm((prev) => ({ ...prev, email: event.target.value }))
-                    }
+                    onChange={setField('email')}
                     required
                   />
                 </div>
 
+                {/* Tipo de conta */}
                 <div className="space-y-2">
                   <Label>Tipo de conta</Label>
                   <Select
                     value={registerForm.tipo}
                     onValueChange={(value) =>
-                      setRegisterForm((prev) => ({
-                        ...prev,
-                        tipo: value,
-                        nome_empresa: value === 'prestador' ? prev.nome_empresa : '',
-                      }))
+                      setRegisterForm((prev) => ({ ...prev, tipo: value }))
                     }
                   >
                     <SelectTrigger>
@@ -231,51 +255,111 @@ export default function Login() {
                   </Select>
                 </div>
 
+                {/* Telefone */}
                 <div className="space-y-2">
-                  <Label>CPF</Label>
+                  <Label>Telefone *</Label>
                   <Input
-                    value={registerForm.cpf}
-                    onChange={(event) =>
-                      setRegisterForm((prev) => ({ ...prev, cpf: event.target.value }))
-                    }
-                    placeholder="000.000.000-00"
+                    type="tel"
+                    value={registerForm.telefone}
+                    onChange={setField('telefone')}
+                    placeholder="(11) 99999-0000"
                     required
                   />
                 </div>
 
+                {/* CEP */}
                 <div className="space-y-2">
-                  <Label>CNPJ</Label>
+                  <Label className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    CEP *
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      value={registerForm.cep}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRegisterForm((prev) => ({ ...prev, cep: val }));
+                        if (onlyDigits(val).length === 8) fetchCep(val);
+                      }}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      required
+                    />
+                    {isFetchingCep && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Rua */}
+                <div className="space-y-2">
+                  <Label>Rua</Label>
                   <Input
-                    value={registerForm.cnpj}
-                    onChange={(event) =>
-                      setRegisterForm((prev) => ({ ...prev, cnpj: event.target.value }))
-                    }
-                    placeholder="00.000.000/0000-00"
+                    value={registerForm.rua}
+                    onChange={setField('rua')}
+                    placeholder="Preenchida automaticamente pelo CEP"
                   />
                 </div>
 
-                {registerForm.tipo === 'prestador' && (
+                {/* Número + Complemento */}
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Nome da empresa</Label>
+                    <Label>Número</Label>
                     <Input
-                      value={registerForm.nome_empresa}
-                      onChange={(event) =>
-                        setRegisterForm((prev) => ({ ...prev, nome_empresa: event.target.value }))
-                      }
-                      placeholder="Nome da empresa"
-                      required
+                      value={registerForm.numero}
+                      onChange={setField('numero')}
+                      placeholder="123"
                     />
                   </div>
-                )}
+                  <div className="space-y-2">
+                    <Label>Complemento</Label>
+                    <Input
+                      value={registerForm.complemento}
+                      onChange={setField('complemento')}
+                      placeholder="Apto, Bloco..."
+                    />
+                  </div>
+                </div>
 
+                {/* Bairro */}
                 <div className="space-y-2">
-                  <Label>Senha</Label>
+                  <Label>Bairro</Label>
+                  <Input
+                    value={registerForm.bairro}
+                    onChange={setField('bairro')}
+                    placeholder="Preenchido automaticamente"
+                  />
+                </div>
+
+                {/* Cidade + Estado */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2 space-y-2">
+                    <Label>Cidade</Label>
+                    <Input
+                      value={registerForm.cidade}
+                      onChange={setField('cidade')}
+                      placeholder="Preenchida automaticamente"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Estado</Label>
+                    <Input
+                      value={registerForm.estado}
+                      onChange={setField('estado')}
+                      placeholder="SP"
+                      maxLength={2}
+                    />
+                  </div>
+                </div>
+
+                {/* Senha */}
+                <div className="space-y-2">
+                  <Label>Senha *</Label>
                   <Input
                     type="password"
                     value={registerForm.password}
-                    onChange={(event) =>
-                      setRegisterForm((prev) => ({ ...prev, password: event.target.value }))
-                    }
+                    onChange={setField('password')}
+                    placeholder="Mínimo 6 caracteres"
                     required
                   />
                 </div>
@@ -291,9 +375,6 @@ export default function Login() {
               </form>
             </TabsContent>
           </Tabs>
-
-          <div className="mt-6 text-sm text-gray-500 space-y-1">
-            </div>
 
           <div className="mt-4">
             <Link className="text-blue-600 hover:text-blue-700 text-sm" to={createPageUrl('Home')}>
