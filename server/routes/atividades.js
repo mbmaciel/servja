@@ -39,7 +39,7 @@ export const initAtividadesTable = async () => {
       resolucao     TEXT,
       modulo        VARCHAR(100) NOT NULL DEFAULT 'outros',
       prioridade    ENUM('baixa','media','alta','urgente') NOT NULL DEFAULT 'media',
-      status        ENUM('pendente','em_desenvolvimento','testando','concluido','cancelado')
+      status        ENUM('pendente','em_desenvolvimento','testando','concluido','cancelado','atrasada')
                     NOT NULL DEFAULT 'pendente',
       criado_por       VARCHAR(36),
       criado_por_nome  VARCHAR(255),
@@ -59,6 +59,17 @@ export const initAtividadesTable = async () => {
     await pool.query('ALTER TABLE atividades ADD COLUMN resolucao TEXT NULL AFTER descricao');
   } catch (err) {
     if (err.code !== 'ER_DUP_FIELDNAME') throw err;
+  }
+
+  // Migration: add 'atrasada' to status ENUM if missing
+  try {
+    await pool.query(
+      `ALTER TABLE atividades MODIFY COLUMN status
+       ENUM('pendente','em_desenvolvimento','testando','concluido','cancelado','atrasada')
+       NOT NULL DEFAULT 'pendente'`
+    );
+  } catch {
+    // Ignore — ENUM already up to date
   }
 
   await pool.query(`

@@ -39,9 +39,10 @@ const MODULOS = [
 const MODULO_MAP = Object.fromEntries(MODULOS.map((m) => [m.value, m]));
 
 const STATUS_CONFIG = {
-  pendente:          { label: 'Pendente',          cls: 'bg-gray-100 text-gray-700 border-gray-300'      },
-  em_desenvolvimento:{ label: 'Em Desenvolvimento',cls: 'bg-blue-100 text-blue-700 border-blue-300'      },
+  pendente:          { label: 'Pendente',          cls: 'bg-gray-100 text-gray-700 border-gray-300'       },
+  em_desenvolvimento:{ label: 'Em Desenvolvimento',cls: 'bg-blue-100 text-blue-700 border-blue-300'       },
   testando:          { label: 'Testando',           cls: 'bg-yellow-100 text-yellow-700 border-yellow-300'},
+  atrasada:          { label: 'Atrasada',           cls: 'bg-orange-100 text-orange-700 border-orange-300'},
   concluido:         { label: 'Concluído',          cls: 'bg-green-100 text-green-700 border-green-300'  },
   cancelado:         { label: 'Cancelado',          cls: 'bg-red-100 text-red-700 border-red-300'        },
 };
@@ -81,9 +82,11 @@ export default function AtividadesTab() {
   const [showCompleted, setShowCompleted] = useState(false);
 
   // Diálogo de resolução
-  const [resolucaoDialog, setResolucaoDialog] = useState({ open: false, atividadeId: null });
-  const [resolucaoText, setResolucaoText]     = useState('');
-  const [savingResolucao, setSavingResolucao] = useState(false);
+  const [resolucaoDialog, setResolucaoDialog]       = useState({ open: false, atividadeId: null });
+  const [resolucaoText, setResolucaoText]           = useState('');
+  const [savingResolucao, setSavingResolucao]       = useState(false);
+  const [resolucaoPendingFiles, setResolucaoPendingFiles] = useState([]);
+  const resolucaoFileRef = useRef(null);
 
   // Modal de anexos
   const [anexosModal, setAnexosModal]   = useState({ open: false, atividade: null });
@@ -231,8 +234,15 @@ export default function AtividadesTab() {
         status:    'concluido',
         resolucao: resolucaoText.trim() || null,
       });
+      if (resolucaoPendingFiles.length > 0) {
+        for (const file of resolucaoPendingFiles) {
+          await base44.atividades.uploadAnexo(resolucaoDialog.atividadeId, file);
+        }
+        updated.anexos_count = (Number(updated.anexos_count) || 0) + resolucaoPendingFiles.length;
+      }
       setAtividades((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
       setResolucaoDialog({ open: false, atividadeId: null });
+      setResolucaoPendingFiles([]);
       toast.success('Atividade concluída!');
     } catch {
       toast.error('Erro ao concluir atividade.');
@@ -522,6 +532,26 @@ export default function AtividadesTab() {
                         </div>
                       )}
 
+                      <div className="flex items-center gap-1 mt-2">
+                        <span className="text-xs text-gray-400 mr-0.5">Retornar para:</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-0 text-gray-600 hover:bg-gray-100"
+                          onClick={() => handleStatusChange(atividade, 'pendente')}
+                        >
+                          Pendente
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-0 text-orange-600 border-orange-200 hover:bg-orange-50"
+                          onClick={() => handleStatusChange(atividade, 'atrasada')}
+                        >
+                          Atrasada
+                        </Button>
+                      </div>
+
                       <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-gray-400">
                         {mod && (
                           <span className={`flex items-center gap-1 ${mod.color}`}>
@@ -723,7 +753,7 @@ export default function AtividadesTab() {
       </Dialog>
 
       {/* ── Diálogo de resolução (ao concluir) ──────────────────────────────── */}
-      <Dialog open={resolucaoDialog.open} onOpenChange={(o) => !o && setResolucaoDialog({ open: false, atividadeId: null })}>
+      <Dialog open={resolucaoDialog.open} onOpenChange={(o) => { if (!o) { setResolucaoDialog({ open: false, atividadeId: null }); setResolucaoPendingFiles([]); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -732,17 +762,68 @@ export default function AtividadesTab() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="py-2">
-            <Label htmlFor="resolucao-text">Comentário de resolução</Label>
-            <Textarea
-              id="resolucao-text"
-              placeholder="Descreva o que foi feito, como o problema foi resolvido, ou qualquer informação relevante..."
-              value={resolucaoText}
-              onChange={(e) => setResolucaoText(e.target.value)}
-              className="mt-1 min-h-[100px] resize-none"
-              autoFocus
-            />
-            <p className="text-xs text-gray-400 mt-1">Opcional — mas ajuda a manter histórico do que foi desenvolvido.</p>
+          <div className="py-2 space-y-3">
+            <div>
+              <Label htmlFor="resolucao-text">Comentário de resolução</Label>
+              <Textarea
+                id="resolucao-text"
+                placeholder="Descreva o que foi feito, como o problema foi resolvido, ou qualquer informação relevante..."
+                value={resolucaoText}
+                onChange={(e) => setResolucaoText(e.target.value)}
+                className="mt-1 min-h-[100px] resize-none"
+                autoFocus
+              />
+              <p className="text-xs text-gray-400 mt-1">Opcional — mas ajuda a manter histórico do que foi desenvolvido.</p>
+            </div>
+
+            <div>
+              <Label>Fotos da conclusão (opcional)</Label>
+              <div
+                className="mt-1 border-2 border-dashed border-gray-200 rounded-lg px-3 py-2 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors"
+                onClick={() => resolucaoFileRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const dropped = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
+                  setResolucaoPendingFiles((prev) => [...prev, ...dropped]);
+                }}
+              >
+                <FileImage className="w-4 h-4 inline mr-1 text-gray-400" />
+                <span className="text-sm text-gray-400">
+                  {resolucaoPendingFiles.length > 0
+                    ? `${resolucaoPendingFiles.length} foto(s) selecionada(s) — clique para adicionar mais`
+                    : 'Clique ou arraste fotos para anexar'}
+                </span>
+                <input
+                  ref={resolucaoFileRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setResolucaoPendingFiles((prev) => [...prev, ...files]);
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+              {resolucaoPendingFiles.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {resolucaoPendingFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-1 text-xs bg-green-50 rounded px-2 py-1 border border-green-100">
+                      <FileImage className="w-3 h-3 text-green-500 shrink-0" />
+                      <span className="truncate max-w-[110px] text-gray-700">{f.name}</span>
+                      <button
+                        onClick={() => setResolucaoPendingFiles((prev) => prev.filter((_, j) => j !== i))}
+                        className="text-red-400 hover:text-red-600 shrink-0"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">
