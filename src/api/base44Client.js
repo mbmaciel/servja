@@ -129,6 +129,36 @@ const profile = {
       auth: true,
     });
   },
+  async uploadFoto(file) {
+    const form = new FormData();
+    form.append('foto', file);
+    const token = tokenStorage.get();
+    const res = await fetch('/api/profile/foto', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.message || 'Erro no upload da foto.');
+    }
+    return (await res.json()).url;
+  },
+  async uploadFotoTrabalho(file) {
+    const form = new FormData();
+    form.append('foto', file);
+    const token = tokenStorage.get();
+    const res = await fetch('/api/profile/fotos-trabalhos', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.message || 'Erro no upload da foto.');
+    }
+    return (await res.json()).url;
+  },
 };
 
 const atividades = {

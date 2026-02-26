@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import express from 'express';
+import multer from 'multer';
 import { config } from './config.js';
 import { createAuthToken, verifyAuthToken } from './auth.js';
 import { closePool, getPool } from './db.js';
@@ -14,6 +15,37 @@ import { sendWelcomeEmail, notifyAdmins } from './services/emailService.js';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
+
+// ─── Uploads: foto de perfil e fotos de trabalho ─────────────────────────────
+const UPLOADS_PROFILE_DIR = path.resolve(process.cwd(), 'server', 'uploads', 'profile');
+const UPLOADS_TRABALHOS_DIR = path.resolve(process.cwd(), 'server', 'uploads', 'trabalhos');
+fs.mkdirSync(UPLOADS_PROFILE_DIR, { recursive: true });
+fs.mkdirSync(UPLOADS_TRABALHOS_DIR, { recursive: true });
+
+const imageFilter = (_req, file, cb) => {
+  if (!file.mimetype.startsWith('image/')) {
+    return cb(Object.assign(new Error('Apenas imagens são permitidas.'), { status: 400 }));
+  }
+  cb(null, true);
+};
+
+const uploadProfilePhoto = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_PROFILE_DIR),
+    filename: (_req, file, cb) => cb(null, `${randomUUID()}${path.extname(file.originalname)}`),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: imageFilter,
+});
+
+const uploadTrabalhoPhoto = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_TRABALHOS_DIR),
+    filename: (_req, file, cb) => cb(null, `${randomUUID()}${path.extname(file.originalname)}`),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: imageFilter,
+});
 
 const parseBoolean = (value) => {
   if (typeof value === 'boolean') return value;
@@ -869,6 +901,34 @@ app.patch(
   })
 );
 
+// ─── POST /api/profile/foto ───────────────────────────────────────────────────
+app.post('/api/profile/foto', requireAuth, (req, res, next) => {
+  uploadProfilePhoto.single('foto')(req, res, async (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: 'Imagem muito grande. Limite: 5 MB.' });
+      }
+      return next(err);
+    }
+    if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+    res.json({ url: `/uploads/profile/${req.file.filename}` });
+  });
+});
+
+// ─── POST /api/profile/fotos-trabalhos ───────────────────────────────────────
+app.post('/api/profile/fotos-trabalhos', requireAuth, (req, res, next) => {
+  uploadTrabalhoPhoto.single('foto')(req, res, async (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: 'Imagem muito grande. Limite: 10 MB.' });
+      }
+      return next(err);
+    }
+    if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+    res.json({ url: `/uploads/trabalhos/${req.file.filename}` });
+  });
+});
+
 app.get(
   '/api/users',
   requireAuth,
@@ -1642,6 +1702,8 @@ const maybeServeStatic = () => {
 const startServer = async () => {
   await initializeDatabase();
   await initAtividadesTable();
+  // Serve uploaded files before SPA catch-all
+  app.use('/uploads', express.static(path.resolve(process.cwd(), 'server', 'uploads')));
   maybeServeStatic();
 
   app.listen(config.port, () => {
