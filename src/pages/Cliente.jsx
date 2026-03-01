@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { 
+import {
   Loader2, Search, Clock, CheckCircle,
   FileText, Plus, RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SolicitacaoCard from '@/components/servija/SolicitacaoCard';
+import AvaliacaoModal from '@/components/servija/AvaliacaoModal';
 import { toast } from "sonner";
 
 export default function Cliente() {
   const [user, setUser] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
+  const [avaliacoes, setAvaliacoes] = useState({});         // { [solicitacao_id]: avaliacao }
+  const [avaliacaoModal, setAvaliacaoModal] = useState(null); // solicitacao | null
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -32,6 +35,21 @@ export default function Cliente() {
         '-created_date'
       );
       setSolicitacoes(solicitacoesData);
+
+      // Carrega avaliações das solicitações concluídas
+      const concluidas = solicitacoesData.filter(s => s.status === 'concluido');
+      const map = {};
+      await Promise.all(
+        concluidas.map(async (s) => {
+          try {
+            const av = await base44.avaliacoes.getBySolicitacao(s.id);
+            if (av) map[s.id] = av;
+          } catch {
+            // Ignora erros individuais
+          }
+        })
+      );
+      setAvaliacoes(map);
     } catch (error) {
       toast.error('Você precisa estar logado');
       base44.auth.redirectToLogin();
@@ -191,6 +209,12 @@ export default function Cliente() {
                       solicitacao={solicitacao}
                       tipo="cliente"
                       onCancelar={handleCancelar}
+                      avaliacao={avaliacoes[solicitacao.id] ?? null}
+                      onAvaliar={
+                        solicitacao.status === 'concluido' && !avaliacoes[solicitacao.id]
+                          ? () => setAvaliacaoModal(solicitacao)
+                          : undefined
+                      }
                       isLoading={isUpdating}
                     />
                   ))}
@@ -200,6 +224,18 @@ export default function Cliente() {
           ))}
         </Tabs>
       </div>
+
+      {/* Modal de avaliação */}
+      {avaliacaoModal && (
+        <AvaliacaoModal
+          solicitacao={avaliacaoModal}
+          onSuccess={() => {
+            setAvaliacaoModal(null);
+            loadData();
+          }}
+          onClose={() => setAvaliacaoModal(null)}
+        />
+      )}
     </div>
   );
 }

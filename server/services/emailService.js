@@ -60,6 +60,57 @@ export async function sendWelcomeEmail(user, plainPassword) {
 }
 
 /**
+ * Notifica o cliente que seu serviço foi concluído e o convida a avaliar.
+ */
+export async function sendAvaliacaoEmail({ cliente_email, cliente_nome, prestador_nome, categoria_nome }) {
+  if (!isConfigured()) {
+    console.warn('[emailService] SMTP não configurado. Email de avaliação ignorado.');
+    return;
+  }
+
+  try {
+    const appUrl = process.env.APP_URL || 'https://sevija.com';
+    const transporter = createTransporter();
+
+    await transporter.sendMail({
+      from: `"ServiJá" <${process.env.SMTP_USER}>`,
+      to: cliente_email,
+      subject: 'Seu serviço foi concluído — avalie o atendimento',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2563eb;">Serviço concluído!</h2>
+          <p>Olá${cliente_nome ? `, <strong>${cliente_nome}</strong>` : ''}!</p>
+          <p>
+            O prestador <strong>${prestador_nome || 'contratado'}</strong>
+            ${categoria_nome ? `(${categoria_nome})` : ''}
+            marcou seu serviço como concluído.
+          </p>
+          <p>Sua opinião é muito importante. Avalie o atendimento e ajude outros clientes a escolherem os melhores profissionais.</p>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${appUrl}/cliente"
+               style="background: #2563eb; color: #fff; text-decoration: none;
+                      padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+              Avaliar Atendimento
+            </a>
+          </div>
+
+          <p style="color: #6b7280; font-size: 13px;">
+            Acesse <em>Meus Serviços → aba Concluídos → botão Avaliar</em> para registrar sua avaliação com estrelas, comentário e fotos.
+          </p>
+
+          <p style="color: #9ca3af; font-size: 12px; margin-top: 30px;">
+            Este é um email automático do ServiJá. Não responda a este email.
+          </p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error('[emailService] Erro ao enviar email de avaliação:', err.message);
+  }
+}
+
+/**
  * Notifica todos os admins sobre um novo cadastro na plataforma.
  */
 export async function notifyAdmins(pool, newUser) {

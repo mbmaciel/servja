@@ -1,9 +1,9 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { 
-  Clock, CheckCircle, XCircle, 
-  User, Briefcase
+import {
+  Clock, CheckCircle, XCircle,
+  User, Briefcase, Star
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,13 +38,15 @@ const statusConfig = {
   },
 };
 
-export default function SolicitacaoCard({ 
-  solicitacao, 
+export default function SolicitacaoCard({
+  solicitacao,
   tipo = 'cliente', // 'cliente' ou 'prestador'
   onAceitar,
   onRecusar,
   onConcluir,
   onCancelar,
+  onAvaliar,
+  avaliacao,
   isLoading
 }) {
   const status = statusConfig[solicitacao.status] || statusConfig.aberto;
@@ -131,13 +133,13 @@ export default function SolicitacaoCard({
       </CardContent>
 
       {/* Actions */}
-      {(solicitacao.status === 'aberto' || solicitacao.status === 'aceito') && (
+      {(solicitacao.status === 'aberto' || solicitacao.status === 'aceito' || solicitacao.status === 'concluido') && (
         <CardFooter className="pt-0">
-          <div className="flex gap-2 w-full">
+          <div className="flex gap-2 w-full flex-wrap">
             {tipo === 'prestador' && solicitacao.status === 'aberto' && (
               <>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => onRecusar(solicitacao)}
                   disabled={isLoading}
@@ -145,7 +147,7 @@ export default function SolicitacaoCard({
                   <XCircle className="w-4 h-4 mr-2" />
                   Recusar
                 </Button>
-                <Button 
+                <Button
                   className="flex-1 bg-green-600 hover:bg-green-700"
                   onClick={() => onAceitar(solicitacao)}
                   disabled={isLoading}
@@ -157,7 +159,7 @@ export default function SolicitacaoCard({
             )}
 
             {tipo === 'prestador' && solicitacao.status === 'aceito' && (
-              <Button 
+              <Button
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 onClick={() => onConcluir(solicitacao)}
                 disabled={isLoading}
@@ -168,8 +170,8 @@ export default function SolicitacaoCard({
             )}
 
             {tipo === 'cliente' && solicitacao.status === 'aberto' && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                 onClick={() => onCancelar(solicitacao)}
                 disabled={isLoading}
@@ -177,6 +179,29 @@ export default function SolicitacaoCard({
                 <XCircle className="w-4 h-4 mr-2" />
                 Cancelar Solicitação
               </Button>
+            )}
+
+            {tipo === 'cliente' && solicitacao.status === 'concluido' && (
+              avaliacao ? (
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`w-5 h-5 ${n <= avaliacao.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                    />
+                  ))}
+                  <span className="text-sm text-gray-500 ml-1">Avaliado</span>
+                </div>
+              ) : onAvaliar ? (
+                <Button
+                  onClick={onAvaliar}
+                  className="w-full gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
+                  disabled={isLoading}
+                >
+                  <Star className="w-4 h-4" />
+                  Avaliar Atendimento
+                </Button>
+              ) : null
             )}
           </div>
         </CardFooter>

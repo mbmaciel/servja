@@ -227,10 +227,45 @@ const users = {
   },
 };
 
+const avaliacoes = {
+  async listByPrestador(prestador_id) {
+    const response = await apiRequest(`/api/avaliacoes?prestador_id=${prestador_id}`);
+    return response.items;
+  },
+  async getBySolicitacao(solicitacao_id) {
+    const response = await apiRequest(`/api/avaliacoes/solicitacao/${solicitacao_id}`, { auth: true });
+    return response.item;
+  },
+  async create(payload) {
+    const response = await apiRequest('/api/avaliacoes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      auth: true,
+    });
+    return response.item;
+  },
+  async uploadFoto(avaliacaoId, file) {
+    const form = new FormData();
+    form.append('foto', file);
+    const token = tokenStorage.get();
+    const res = await fetch(`/api/avaliacoes/${avaliacaoId}/fotos`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.message || 'Erro no upload da foto.');
+    }
+    return (await res.json()).url;
+  },
+};
+
 export const base44 = {
   auth,
   profile,
   atividades,
+  avaliacoes,
   users,
   entities: {
     Categoria: createEntityClient('categorias'),

@@ -9,9 +9,10 @@ import { createAuthToken, verifyAuthToken } from './auth.js';
 import { closePool, getPool } from './db.js';
 import { initializeDatabase } from './initDb.js';
 import { router as atividadesRouter, initAtividadesTable } from './routes/atividades.js';
+import { router as avaliacoesRouter, initAvaliacoesTable } from './routes/avaliacoes.js';
 import { serializeRow, serializeRows, toPublicUser } from './serializers.js';
 import { geocodeByCep } from './services/geocodeService.js';
-import { sendWelcomeEmail, notifyAdmins } from './services/emailService.js';
+import { sendWelcomeEmail, notifyAdmins, sendAvaliacaoEmail } from './services/emailService.js';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -1659,6 +1660,18 @@ app.patch(
     values.push(id);
     await pool.query(`UPDATE solicitacoes SET ${updates.join(', ')} WHERE id = ?`, values);
 
+    // Dispara email de avaliação quando serviço é concluído
+    if (payload.status === 'concluido' && existing.status !== 'concluido') {
+      setImmediate(() =>
+        sendAvaliacaoEmail({
+          cliente_email:  existing.cliente_email,
+          cliente_nome:   existing.cliente_nome,
+          prestador_nome: existing.prestador_nome,
+          categoria_nome: existing.categoria_nome,
+        }).catch(console.error)
+      );
+    }
+
     const [updatedRows] = await pool.query('SELECT * FROM solicitacoes WHERE id = ? LIMIT 1', [id]);
     res.json({ item: serializeRow(updatedRows[0]) });
   })
@@ -1666,6 +1679,9 @@ app.patch(
 
 // ─── Atividades (backlog dev/cliente) ────────────────────────────────────────
 app.use('/api/atividades', requireAuth, requireAdmin, atividadesRouter);
+
+// ─── Avaliações de serviços ───────────────────────────────────────────────────
+app.use('/api/avaliacoes', avaliacoesRouter);
 
 app.post('/api/events', (_req, res) => {
   res.status(204).end();
@@ -1702,6 +1718,7 @@ const maybeServeStatic = () => {
 const startServer = async () => {
   await initializeDatabase();
   await initAtividadesTable();
+  await initAvaliacoesTable();
   // Serve uploaded files before SPA catch-all
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'server', 'uploads')));
   maybeServeStatic();
