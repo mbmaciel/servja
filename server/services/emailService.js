@@ -6,15 +6,17 @@
 
 import nodemailer from 'nodemailer';
 
-const isConfigured = () =>
-  Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+const SMTP_USER = process.env.SMTP_USER || 'servirja2026@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'Servirja@2026!';
+
+const isConfigured = () => Boolean(SMTP_USER && SMTP_PASS);
 
 const createTransporter = () =>
   nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: SMTP_USER,
+      pass: SMTP_PASS,
     },
   });
 
@@ -31,7 +33,7 @@ export async function sendWelcomeEmail(user, plainPassword) {
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"ServiJá" <${process.env.SMTP_USER}>`,
+    from: `"ServiJá" <${SMTP_USER}>`,
     to: user.email,
     subject: `Bem-vindo ao ServiJá, ${user.full_name}!`,
     html: `
@@ -73,7 +75,7 @@ export async function sendAvaliacaoEmail({ cliente_email, cliente_nome, prestado
     const transporter = createTransporter();
 
     await transporter.sendMail({
-      from: `"ServiJá" <${process.env.SMTP_USER}>`,
+      from: `"ServiJá" <${SMTP_USER}>`,
       to: cliente_email,
       subject: 'Seu serviço foi concluído — avalie o atendimento',
       html: `
@@ -130,7 +132,7 @@ export async function notifyAdmins(pool, newUser) {
   const adminEmails = adminRows.map((a) => a.email);
 
   await transporter.sendMail({
-    from: `"ServiJá" <${process.env.SMTP_USER}>`,
+    from: `"ServiJá" <${SMTP_USER}>`,
     to: adminEmails,
     subject: `[ServiJá] Novo ${tipoLabel} cadastrado: ${newUser.full_name}`,
     html: `

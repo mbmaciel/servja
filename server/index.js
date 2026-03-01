@@ -237,6 +237,7 @@ app.post(
       full_name, email, password, tipo,
       telefone, cep,
       rua, bairro, cidade, estado, numero, complemento,
+      preco_base,
     } = req.body ?? {};
 
     if (!full_name || !email || !password) {
@@ -303,6 +304,17 @@ app.post(
       }
 
       throw error;
+    }
+
+    // Cria registro inicial de prestador se necessário
+    if (normalizedTipo === 'prestador') {
+      const prestadorId = randomUUID();
+      const precoBaseValue = preco_base ? (parseFloat(preco_base) || null) : null;
+      await pool.query(
+        `INSERT INTO prestadores (id, user_id, user_email, nome, telefone, preco_base, status_aprovacao, ativo)
+         VALUES (?, ?, ?, ?, ?, ?, 'pendente', TRUE)`,
+        [prestadorId, userId, String(email).trim().toLowerCase(), String(full_name).trim(), telefoneValue, precoBaseValue]
+      );
     }
 
     const userRow = await getUserById(userId);
@@ -912,7 +924,12 @@ app.post('/api/profile/foto', requireAuth, (req, res, next) => {
       return next(err);
     }
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
-    res.json({ url: `/uploads/profile/${req.file.filename}` });
+    const fotoUrl = `/uploads/profile/${req.file.filename}`;
+    // Atualiza foto no registro do prestador, se existir
+    getPool()
+      .query('UPDATE prestadores SET foto = ? WHERE user_id = ?', [fotoUrl, req.currentUser.id])
+      .catch(() => {});
+    res.json({ url: fotoUrl });
   });
 });
 
