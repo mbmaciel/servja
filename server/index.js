@@ -1717,8 +1717,15 @@ const maybeServeStatic = () => {
 
 const startServer = async () => {
   await initializeDatabase();
-  await initAtividadesTable();
-  await initAvaliacoesTable();
+
+  // Módulos opcionais: falhas aqui não derrubam o servidor principal
+  try { await initAtividadesTable(); } catch (e) {
+    console.error('[startup] Falha ao inicializar tabela atividades (não crítico):', e.message);
+  }
+  try { await initAvaliacoesTable(); } catch (e) {
+    console.error('[startup] Falha ao inicializar tabela avaliacoes (não crítico):', e.message);
+  }
+
   // Serve uploaded files before SPA catch-all
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'server', 'uploads')));
   maybeServeStatic();
