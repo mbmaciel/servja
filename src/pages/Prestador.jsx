@@ -27,6 +27,7 @@ export default function Prestador() {
   const [user, setUser] = useState(null);
   const [prestador, setPrestador] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
+  const [avaliacoes, setAvaliacoes] = useState({});  // { [solicitacao_id]: avaliacao }
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -60,6 +61,19 @@ export default function Prestador() {
 
       setSolicitacoes(solicitacoesData);
       setPrestador(prestadorData);
+
+      // Carrega avaliações das solicitações concluídas
+      const concluidas = solicitacoesData.filter(s => s.status === 'concluido');
+      const map = {};
+      await Promise.all(
+        concluidas.map(async (s) => {
+          try {
+            const av = await base44.avaliacoes.getBySolicitacao(s.id);
+            if (av) map[s.id] = av;
+          } catch {}
+        })
+      );
+      setAvaliacoes(map);
     } catch (error) {
       toast.error('Você precisa estar logado');
       base44.auth.redirectToLogin();
@@ -317,6 +331,7 @@ export default function Prestador() {
                       onAceitar={handleAceitar}
                       onRecusar={handleRecusar}
                       onConcluir={handleConcluir}
+                      avaliacao={avaliacoes[solicitacao.id] ?? null}
                       isLoading={isUpdating}
                     />
                   ))}

@@ -203,6 +203,25 @@ export default function SolicitacaoCard({
                 </Button>
               ) : null
             )}
+
+            {tipo === 'prestador' && solicitacao.status === 'concluido' && avaliacao && (
+              <div className="w-full bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 space-y-1">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`w-4 h-4 ${n <= avaliacao.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                    />
+                  ))}
+                  <span className="text-sm font-medium text-yellow-700 ml-1">
+                    Avaliação do cliente
+                  </span>
+                </div>
+                {avaliacao.comentario && (
+                  <p className="text-sm text-gray-600 italic">"{avaliacao.comentario}"</p>
+                )}
+              </div>
+            )}
           </div>
         </CardFooter>
       )}
