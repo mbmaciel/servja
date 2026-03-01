@@ -41,17 +41,17 @@ export const initAvaliacoesTable = async () => {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS avaliacoes (
-      id              CHAR(36)     PRIMARY KEY,
-      solicitacao_id  CHAR(36)     NOT NULL UNIQUE,
-      prestador_id    CHAR(36)     NOT NULL,
-      cliente_id      CHAR(36),
+      id              VARCHAR(36)  PRIMARY KEY,
+      solicitacao_id  VARCHAR(36)  NOT NULL UNIQUE,
+      prestador_id    VARCHAR(36)  NOT NULL,
+      cliente_id      VARCHAR(36),
       cliente_nome    VARCHAR(150),
       estrelas        TINYINT      NOT NULL,
       comentario      TEXT,
       fotos           JSON,
       created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (solicitacao_id) REFERENCES solicitacoes(id) ON DELETE CASCADE,
-      INDEX idx_prestador (prestador_id)
+      INDEX idx_solicitacao (solicitacao_id),
+      INDEX idx_prestador   (prestador_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
