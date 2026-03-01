@@ -525,6 +525,12 @@ export default function AtividadesTab() {
                         </span>
                       </div>
 
+                      {atividade.descricao && (
+                        <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+                          {atividade.descricao}
+                        </p>
+                      )}
+
                       {atividade.resolucao && (
                         <div className="mt-2 text-xs text-gray-600 bg-white rounded border border-gray-200 px-2 py-1.5">
                           <span className="font-semibold text-green-700">Resolução: </span>
@@ -564,8 +570,12 @@ export default function AtividadesTab() {
                             Concluído em {new Date(atividade.completed_at).toLocaleDateString('pt-BR')}
                           </span>
                         )}
-                        {atividade.criado_por_nome && (
-                          <span>{atividade.criado_por_nome}</span>
+                        {(atividade.concluido_por_nome || atividade.criado_por_nome) && (
+                          <span>
+                            {atividade.concluido_por_nome
+                              ? `Concluído por ${atividade.concluido_por_nome}`
+                              : atividade.criado_por_nome}
+                          </span>
                         )}
                         <button
                           onClick={() => openAnexos(atividade)}

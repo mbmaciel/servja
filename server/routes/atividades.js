@@ -61,6 +61,13 @@ export const initAtividadesTable = async () => {
     if (err.code !== 'ER_DUP_FIELDNAME') throw err;
   }
 
+  // Migration: add concluido_por_nome column if missing
+  try {
+    await pool.query('ALTER TABLE atividades ADD COLUMN concluido_por_nome VARCHAR(255) NULL AFTER criado_por_nome');
+  } catch (err) {
+    if (err.code !== 'ER_DUP_FIELDNAME') throw err;
+  }
+
   // Migration: add 'atrasada' to status ENUM if missing
   try {
     await pool.query(
@@ -340,11 +347,14 @@ router.patch('/:id', async (req, res, next) => {
     if (payload.status === 'concluido' && existing[0].status !== 'concluido') {
       updates.push('completed_at = ?');
       values.push(new Date());
+      updates.push('concluido_por_nome = ?');
+      values.push(req.currentUser.full_name || req.currentUser.email);
     }
 
     if (payload.status && payload.status !== 'concluido' && existing[0].status === 'concluido') {
       updates.push('completed_at = NULL');
       updates.push('resolucao = NULL');
+      updates.push('concluido_por_nome = NULL');
     }
 
     values.push(id);
