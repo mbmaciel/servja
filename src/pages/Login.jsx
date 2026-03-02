@@ -168,7 +168,12 @@ export default function Login() {
       };
 
       if (registerTab === 'prestador' && registerForm.preco_base) {
-        payload.preco_base = parseFloat(registerForm.preco_base) || null;
+        const precoValue = parseFloat(registerForm.preco_base) || null;
+        if (registerForm.tipo_preco === 'diaria') {
+          payload.valor_hora = precoValue; // diária → valor_hora
+        } else {
+          payload.preco_base = precoValue; // valor fixo → preco_base
+        }
       }
 
       await base44.auth.register(payload);

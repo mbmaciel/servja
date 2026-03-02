@@ -237,7 +237,7 @@ app.post(
       full_name, email, password, tipo,
       telefone, cep,
       rua, bairro, cidade, estado, numero, complemento,
-      preco_base,
+      preco_base, valor_hora,
     } = req.body ?? {};
 
     if (!full_name || !email || !password) {
@@ -310,10 +310,11 @@ app.post(
     if (normalizedTipo === 'prestador') {
       const prestadorId = randomUUID();
       const precoBaseValue = preco_base ? (parseFloat(preco_base) || null) : null;
+      const valorHoraValue = valor_hora ? (parseFloat(valor_hora) || null) : null;
       await pool.query(
-        `INSERT INTO prestadores (id, user_id, user_email, nome, telefone, preco_base, status_aprovacao, ativo)
-         VALUES (?, ?, ?, ?, ?, ?, 'pendente', TRUE)`,
-        [prestadorId, userId, String(email).trim().toLowerCase(), String(full_name).trim(), telefoneValue, precoBaseValue]
+        `INSERT INTO prestadores (id, user_id, user_email, nome, telefone, preco_base, valor_hora, status_aprovacao, ativo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', TRUE)`,
+        [prestadorId, userId, String(email).trim().toLowerCase(), String(full_name).trim(), telefoneValue, precoBaseValue, valorHoraValue]
       );
     }
 
