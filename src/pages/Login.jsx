@@ -72,9 +72,12 @@ export default function Login() {
   const [registerTab, setRegisterTab] = useState('cliente'); // 'cliente' | 'prestador'
   const [fotoFile, setFotoFile] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
+  const [fotosTrabalhoFiles, setFotosTrabalhoFiles] = useState([]);
+  const [fotosTrabalhoPreview, setFotosTrabalhoPreview] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
   const fotoInputRef = useRef(null);
+  const fotosTrabalhoInputRef = useRef(null);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -130,6 +133,29 @@ export default function Login() {
     if (fotoInputRef.current) fotoInputRef.current.value = '';
   };
 
+  const handleFotoTrabalhoChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const remaining = 5 - fotosTrabalhoFiles.length;
+    const newFiles = files.slice(0, remaining);
+    setFotosTrabalhoFiles((prev) => [...prev, ...newFiles]);
+    setFotosTrabalhoPreview((prev) => [
+      ...prev,
+      ...newFiles.map((f) => URL.createObjectURL(f)),
+    ]);
+    if (e.target) e.target.value = '';
+  };
+
+  const removeFotoTrabalho = (index) => {
+    setFotosTrabalhoFiles((prev) => prev.filter((_, i) => i !== index));
+    setFotosTrabalhoPreview((prev) => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index]);
+      updated.splice(index, 1);
+      return updated;
+    });
+  };
+
   const handleRegister = async (event) => {
     event.preventDefault();
 
@@ -178,12 +204,23 @@ export default function Login() {
 
       await base44.auth.register(payload);
 
-      // Upload de foto após o registro (usuário já está autenticado)
+      // Upload de foto de perfil após o registro (usuário já está autenticado)
       if (registerTab === 'prestador' && fotoFile) {
         try {
           await base44.profile.uploadFoto(fotoFile);
         } catch {
           // Não-fatal — o prestador pode adicionar a foto no perfil depois
+        }
+      }
+
+      // Upload de fotos do serviço (não-fatal, sequencial para preservar ordem)
+      if (registerTab === 'prestador' && fotosTrabalhoFiles.length > 0) {
+        for (const file of fotosTrabalhoFiles) {
+          try {
+            await base44.profile.uploadFotoTrabalho(file);
+          } catch {
+            // Não-fatal
+          }
         }
       }
 
@@ -359,6 +396,8 @@ export default function Login() {
                 onValueChange={(v) => {
                   setRegisterTab(v);
                   removeFoto();
+                  setFotosTrabalhoFiles([]);
+                  setFotosTrabalhoPreview([]);
                 }}
                 className="mb-4"
               >
@@ -428,6 +467,52 @@ export default function Login() {
                         className="hidden"
                         onChange={handleFotoChange}
                       />
+                    </div>
+
+                    {/* Fotos do serviço */}
+                    <div className="space-y-2">
+                      <Label>Fotos do serviço (opcional)</Label>
+                      {fotosTrabalhoPreview.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {fotosTrabalhoPreview.map((src, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={src}
+                                alt={`Foto ${index + 1}`}
+                                className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeFotoTrabalho(index)}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {fotosTrabalhoFiles.length < 5 && (
+                        <button
+                          type="button"
+                          onClick={() => fotosTrabalhoInputRef.current?.click()}
+                          className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Camera className="w-4 h-4" />
+                          Adicionar fotos do serviço ({fotosTrabalhoFiles.length}/5)
+                        </button>
+                      )}
+                      <input
+                        ref={fotosTrabalhoInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleFotoTrabalhoChange}
+                      />
+                      <p className="text-xs text-gray-400">
+                        Adicione até 5 fotos dos serviços realizados.
+                      </p>
                     </div>
 
                     {/* Preço médio */}
