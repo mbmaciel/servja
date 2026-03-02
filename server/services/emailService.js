@@ -1,19 +1,23 @@
 /**
- * Serviço de email via Gmail SMTP (nodemailer).
- * Requer variáveis de ambiente: SMTP_USER e SMTP_PASS (App Password do Google).
- * Se não configurado, loga aviso e segue sem bloquear.
+ * Serviço de email via Brevo SMTP (nodemailer).
+ * Variáveis de ambiente: SMTP_USER, SMTP_PASS, SMTP_FROM (opcional).
  */
 
 import nodemailer from 'nodemailer';
 
-const SMTP_USER = process.env.SMTP_USER || 'servirja2026@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || 'Servirja@2026!';
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
+const SMTP_USER = process.env.SMTP_USER || 'a3b4ef001@smtp-brevo.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'NCGDhIn0QpxjwVXH';
+const SMTP_FROM = process.env.SMTP_FROM || 'servirja2026@gmail.com';
 
 const isConfigured = () => Boolean(SMTP_USER && SMTP_PASS);
 
 const createTransporter = () =>
   nodemailer.createTransport({
-    service: 'gmail',
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: false,
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
@@ -33,7 +37,7 @@ export async function sendWelcomeEmail(user, plainPassword) {
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"ServiJá" <${SMTP_USER}>`,
+    from: `"ServiJá" <${SMTP_FROM}>`,
     to: user.email,
     subject: `Bem-vindo ao ServiJá, ${user.full_name}!`,
     html: `
@@ -75,7 +79,7 @@ export async function sendAvaliacaoEmail({ cliente_email, cliente_nome, prestado
     const transporter = createTransporter();
 
     await transporter.sendMail({
-      from: `"ServiJá" <${SMTP_USER}>`,
+      from: `"ServiJá" <${SMTP_FROM}>`,
       to: cliente_email,
       subject: 'Seu serviço foi concluído — avalie o atendimento',
       html: `
@@ -132,7 +136,7 @@ export async function notifyAdmins(pool, newUser) {
   const adminEmails = adminRows.map((a) => a.email);
 
   await transporter.sendMail({
-    from: `"ServiJá" <${SMTP_USER}>`,
+    from: `"ServiJá" <${SMTP_FROM}>`,
     to: adminEmails,
     subject: `[ServiJá] Novo ${tipoLabel} cadastrado: ${newUser.full_name}`,
     html: `
