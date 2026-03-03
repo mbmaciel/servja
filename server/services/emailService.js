@@ -33,6 +33,8 @@ export async function sendWelcomeEmail(user, plainPassword) {
     return;
   }
 
+  const appUrl = process.env.APP_URL || 'https://sevija.com';
+  const logoUrl = `${appUrl}/uploads/logo-sevja.jpg`;
   const tipoLabel = user.tipo === 'prestador' ? 'Prestador de Serviços' : 'Cliente';
   const transporter = createTransporter();
 
@@ -41,25 +43,67 @@ export async function sendWelcomeEmail(user, plainPassword) {
     to: user.email,
     subject: `Bem-vindo ao ServiJá, ${user.full_name}!`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #2563eb;">Bem-vindo ao ServiJá! 🎉</h2>
-        <p>Olá, <strong>${user.full_name}</strong>!</p>
-        <p>Seu cadastro como <strong>${tipoLabel}</strong> foi realizado com sucesso.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
 
-        <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-          <h3 style="margin: 0 0 12px; color: #374151;">Seus dados de acesso:</h3>
-          <p style="margin: 4px 0;"><strong>Email:</strong> ${user.email}</p>
-          <p style="margin: 4px 0;"><strong>Senha:</strong> ${plainPassword}</p>
+        <!-- Cabeçalho com logo -->
+        <div style="background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%); border-radius: 12px 12px 0 0; padding: 32px 20px; text-align: center;">
+          <img src="${logoUrl}" alt="ServiJá" width="90" height="90"
+               style="border-radius: 20px; display: block; margin: 0 auto 16px;" />
+          <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">ServiJá</h1>
+          <p style="margin: 6px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Serviços na sua região</p>
         </div>
 
-        <p>Acesse a plataforma e ${user.tipo === 'prestador'
-          ? 'configure seu perfil profissional para começar a receber solicitações.'
-          : 'encontre os melhores prestadores de serviços da sua região.'
-        }</p>
+        <!-- Corpo -->
+        <div style="padding: 32px 28px;">
+          <h2 style="margin: 0 0 8px; color: #1e293b; font-size: 20px;">Bem-vindo, ${user.full_name}!</h2>
+          <p style="margin: 0 0 20px; color: #475569; line-height: 1.6;">
+            Seu cadastro como <strong>${tipoLabel}</strong> foi realizado com sucesso.
+            Aqui estão suas credenciais de acesso:
+          </p>
 
-        <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
-          Por segurança, recomendamos que você altere sua senha após o primeiro acesso.
-        </p>
+          <!-- Box credenciais -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 28px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; font-size: 13px; width: 80px;">Email</td>
+                <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${user.email}</td>
+              </tr>
+              <tr style="border-top: 1px solid #e2e8f0;">
+                <td style="padding: 8px 0; color: #64748b; font-size: 13px;">Senha</td>
+                <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${plainPassword}</td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="margin: 0 0 28px; color: #475569; line-height: 1.6;">
+            ${user.tipo === 'prestador'
+              ? 'Configure seu perfil profissional e comece a receber solicitações de clientes na sua região.'
+              : 'Encontre os melhores prestadores de serviços próximos a você com facilidade.'}
+          </p>
+
+          <!-- Botão acesso -->
+          <div style="text-align: center; margin-bottom: 32px;">
+            <a href="${appUrl}"
+               style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%);
+                      color: #ffffff; text-decoration: none; padding: 14px 36px;
+                      border-radius: 50px; font-size: 16px; font-weight: 700; letter-spacing: 0.3px;">
+              Acessar a plataforma
+            </a>
+          </div>
+
+          <p style="margin: 0; color: #94a3b8; font-size: 12px; text-align: center;">
+            Por segurança, recomendamos que você altere sua senha após o primeiro acesso.
+          </p>
+        </div>
+
+        <!-- Rodapé -->
+        <div style="background: #f1f5f9; border-radius: 0 0 12px 12px; padding: 16px 28px; text-align: center;">
+          <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+            © 2026 ServiJá &nbsp;·&nbsp;
+            <a href="${appUrl}" style="color: #3b82f6; text-decoration: none;">${appUrl.replace('https://', '')}</a>
+          </p>
+        </div>
+
       </div>
     `,
   });
