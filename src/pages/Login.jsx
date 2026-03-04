@@ -213,11 +213,20 @@ export default function Login() {
         }
       }
 
-      // Upload de fotos do serviço (não-fatal, sequencial para preservar ordem)
+      // Upload de fotos do serviço e persistência no banco
       if (registerTab === 'prestador' && fotosTrabalhoFiles.length > 0) {
+        const urls = [];
         for (const file of fotosTrabalhoFiles) {
           try {
-            await base44.profile.uploadFotoTrabalho(file);
+            const url = await base44.profile.uploadFotoTrabalho(file);
+            if (url) urls.push(url);
+          } catch {
+            // Não-fatal
+          }
+        }
+        if (urls.length > 0) {
+          try {
+            await base44.profile.savePrestador({ prestador: { fotos_trabalhos: urls } });
           } catch {
             // Não-fatal
           }
