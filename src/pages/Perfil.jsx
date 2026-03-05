@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import {
   User, Mail, Phone, Save, Loader2, Building, Shield, Calendar, CreditCard, Home,
@@ -35,6 +36,7 @@ export default function Perfil() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const [fotoModal, setFotoModal] = useState(false);
   const [isUploadingTrabalho, setIsUploadingTrabalho] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
@@ -300,29 +302,38 @@ export default function Perfil() {
         {/* Profile Card com foto */}
         <Card className="mb-6 overflow-hidden">
           {fotosTrabalhos.length > 0 ? (
-            <FotosCarousel fotos={fotosTrabalhos} height="h-32" autoplay alwaysShowArrows={false} />
+            <FotosCarousel fotos={fotosTrabalhos} height="h-40" autoplay alwaysShowArrows />
           ) : (
-            <div className="h-32 bg-gradient-to-r from-blue-500 to-blue-600" />
+            <div className="h-40 bg-gradient-to-r from-blue-500 to-blue-600" />
           )}
           <CardContent className="relative pt-0">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
-              {/* Avatar com botão de upload */}
-              <div className="relative group w-24 h-24">
-                <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
-                  <AvatarImage src={foto} />
-                  <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl font-bold">
-                    {getInitials(user?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+              {/* Avatar: clique abre modal; botão camera troca a foto */}
+              <div className="relative w-24 h-24 flex-shrink-0">
                 <button
                   type="button"
-                  className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="w-24 h-24 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  onClick={() => foto && setFotoModal(true)}
+                  title={foto ? 'Ver foto ampliada' : undefined}
+                >
+                  <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
+                    <AvatarImage src={foto} />
+                    <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl font-bold">
+                      {getInitials(user?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+                {/* Botão troca foto (camera) */}
+                <button
+                  type="button"
+                  className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 shadow-lg border-2 border-white transition-colors"
                   onClick={() => fotoInputRef.current?.click()}
                   disabled={isUploadingFoto}
+                  title="Trocar foto"
                 >
                   {isUploadingFoto
-                    ? <Loader2 className="w-6 h-6 text-white animate-spin" />
-                    : <Camera className="w-6 h-6 text-white" />
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <Camera className="w-3.5 h-3.5" />
                   }
                 </button>
                 <input
@@ -337,7 +348,9 @@ export default function Perfil() {
               <div className="flex-1 pb-2">
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
                 <p className="text-gray-500">{user?.email}</p>
-                <p className="text-xs text-gray-400 mt-1">Clique na foto para alterar</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {foto ? 'Clique na foto para ampliar · ícone de câmera para trocar' : 'Clique no ícone de câmera para adicionar foto'}
+                </p>
               </div>
               {user?.tipo && (
                 <Badge className={`
@@ -643,5 +656,41 @@ export default function Perfil() {
         </Card>
       </div>
     </div>
+
+    {/* Modal de visualização da foto de perfil */}
+    {fotoModal && foto && createPortal(
+      <div
+        className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-6"
+        onClick={() => setFotoModal(false)}
+      >
+        <div
+          className="relative max-w-sm w-full flex flex-col items-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <img
+            src={foto}
+            alt={user?.full_name}
+            className="w-64 h-64 rounded-full object-cover border-4 border-white shadow-2xl"
+            draggable={false}
+          />
+          <p className="mt-4 text-white font-semibold text-lg">{user?.full_name}</p>
+          <div className="mt-4 flex gap-3">
+            <button
+              className="flex items-center gap-2 bg-white text-gray-800 hover:bg-gray-100 rounded-full px-5 py-2 text-sm font-medium shadow-lg transition-colors"
+              onClick={() => { setFotoModal(false); fotoInputRef.current?.click(); }}
+            >
+              <Camera className="w-4 h-4" /> Trocar foto
+            </button>
+            <button
+              className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white rounded-full px-5 py-2 text-sm font-medium transition-colors"
+              onClick={() => setFotoModal(false)}
+            >
+              <X className="w-4 h-4" /> Fechar
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
   );
 }
