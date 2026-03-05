@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Star, MapPin, BadgeCheck, Send, Loader2, MessageCircle } from 'lucide-react';
+import FotosCarousel from '@/components/servija/FotosCarousel';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -120,12 +121,27 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
 
   if (!prestador) return null;
 
+  const fotos = (() => {
+    const ft = prestador?.fotos_trabalhos;
+    if (Array.isArray(ft)) return ft.filter(Boolean);
+    if (typeof ft === 'string') {
+      try { return JSON.parse(ft).filter(Boolean); } catch { return []; }
+    }
+    return [];
+  })();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Solicitar Serviço</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+        {/* Carousel de fotos do serviço */}
+        {fotos.length > 0 && (
+          <FotosCarousel fotos={fotos} height="h-52" className="rounded-t-lg" />
+        )}
+
+        <div className="p-6 space-y-4">
+          <DialogHeader>
+            <DialogTitle>Solicitar Serviço</DialogTitle>
+          </DialogHeader>
 
         {/* Prestador Info */}
         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
@@ -226,6 +242,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
             </Button>
           </div>
         </form>
+        </div>{/* fim p-6 */}
       </DialogContent>
     </Dialog>
   );

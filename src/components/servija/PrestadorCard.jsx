@@ -3,6 +3,7 @@ import { Star, MapPin, BadgeCheck, Phone } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import FotosCarousel from '@/components/servija/FotosCarousel';
 
 export default function PrestadorCard({ prestador, onSolicitar, compact = false }) {
   const getInitials = (name) => {
@@ -13,31 +14,30 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
   const getPrecoInicial = () => {
     let servicos = prestador?.servicos;
     if (typeof servicos === 'string') {
-      try {
-        servicos = JSON.parse(servicos);
-      } catch {
-        servicos = [];
-      }
+      try { servicos = JSON.parse(servicos); } catch { servicos = []; }
     }
-
     if (Array.isArray(servicos)) {
       const precos = servicos
-        .map((servico) => Number(servico?.preco))
-        .filter((preco) => Number.isFinite(preco) && preco >= 0);
-
-      if (precos.length > 0) {
-        return Math.min(...precos);
-      }
+        .map((s) => Number(s?.preco))
+        .filter((p) => Number.isFinite(p) && p >= 0);
+      if (precos.length > 0) return Math.min(...precos);
     }
-
-    if (typeof prestador?.preco_base === 'number') {
-      return prestador.preco_base;
-    }
-
+    if (typeof prestador?.preco_base === 'number') return prestador.preco_base;
     return null;
   };
 
+  const getFotos = () => {
+    const ft = prestador?.fotos_trabalhos;
+    if (Array.isArray(ft)) return ft.filter(Boolean);
+    if (typeof ft === 'string') {
+      try { return JSON.parse(ft).filter(Boolean); } catch { return []; }
+    }
+    return [];
+  };
+
   const precoInicial = getPrecoInicial();
+  const fotos = getFotos();
+  const temFotos = fotos.length > 0;
 
   if (compact) {
     return (
@@ -52,9 +52,7 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h4 className="font-semibold text-gray-900 truncate">{prestador.nome}</h4>
-              {prestador.destaque && (
-                <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              )}
+              {prestador.destaque && <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />}
             </div>
             <p className="text-sm text-gray-500">{prestador.categoria_nome}</p>
           </div>
@@ -64,11 +62,9 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             <span className="text-sm font-medium">{prestador.avaliacao?.toFixed(1) || '5.0'}</span>
           </div>
-          <p className="text-blue-600 font-bold">
-            R$ {precoInicial?.toFixed(2) || '0.00'}
-          </p>
+          <p className="text-blue-600 font-bold">R$ {precoInicial?.toFixed(2) || '0.00'}</p>
         </div>
-        <Button 
+        <Button
           onClick={() => onSolicitar(prestador)}
           className="w-full mt-3 bg-blue-600 hover:bg-blue-700"
           size="sm"
@@ -81,15 +77,23 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
-      {/* Header com foto */}
-      <div className="relative h-32 bg-gradient-to-br from-blue-500 to-blue-600">
+      {/* Header: carousel de fotos ou gradiente */}
+      <div className="relative">
+        {temFotos ? (
+          <FotosCarousel fotos={fotos} height="h-40" />
+        ) : (
+          <div className="h-40 bg-gradient-to-br from-blue-500 to-blue-600" />
+        )}
+
         {prestador.destaque && (
-          <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 hover:bg-yellow-400">
+          <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 hover:bg-yellow-400 z-10">
             <Star className="w-3 h-3 mr-1 fill-yellow-900" />
             Destaque
           </Badge>
         )}
-        <Avatar className="absolute -bottom-8 left-4 w-20 h-20 border-4 border-white shadow-lg">
+
+        {/* Avatar sobreposto */}
+        <Avatar className="absolute -bottom-8 left-4 w-20 h-20 border-4 border-white shadow-lg z-10">
           <AvatarImage src={prestador.foto} />
           <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-bold">
             {getInitials(prestador.nome)}
@@ -103,9 +107,7 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-lg text-gray-900">{prestador.nome}</h3>
-              {prestador.destaque && (
-                <BadgeCheck className="w-5 h-5 text-blue-500" />
-              )}
+              {prestador.destaque && <BadgeCheck className="w-5 h-5 text-blue-500" />}
             </div>
             <Badge variant="secondary" className="mt-1 bg-blue-50 text-blue-700 hover:bg-blue-50">
               {prestador.categoria_nome}
@@ -118,9 +120,7 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
         </div>
 
         {prestador.descricao && (
-          <p className="mt-3 text-sm text-gray-600 line-clamp-2">
-            {prestador.descricao}
-          </p>
+          <p className="mt-3 text-sm text-gray-600 line-clamp-2">{prestador.descricao}</p>
         )}
 
         <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
@@ -138,6 +138,25 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
           )}
         </div>
 
+        {/* Miniaturas de fotos (até 4) quando não há carousel visível no header */}
+        {temFotos && fotos.length > 1 && (
+          <div className="mt-3 flex gap-1.5 overflow-hidden">
+            {fotos.slice(0, 4).map((url, i) => (
+              <div
+                key={i}
+                className="w-12 h-10 rounded-md overflow-hidden flex-shrink-0 border border-gray-100"
+              >
+                <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+              </div>
+            ))}
+            {fotos.length > 4 && (
+              <div className="w-12 h-10 rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-500 flex-shrink-0">
+                +{fotos.length - 4}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-xs text-gray-500">A partir de</p>
@@ -145,7 +164,7 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
               R$ {precoInicial?.toFixed(2) || '0.00'}
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => onSolicitar(prestador)}
             className="bg-blue-600 hover:bg-blue-700 px-6"
           >

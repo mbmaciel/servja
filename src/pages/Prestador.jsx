@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import SolicitacaoCard from '@/components/servija/SolicitacaoCard';
+import FotosCarousel from '@/components/servija/FotosCarousel';
 import { toast } from "sonner";
 
 export default function Prestador() {
@@ -292,6 +293,25 @@ export default function Prestador() {
                   )}
                 </div>
               </div>
+
+              {/* Fotos dos serviços */}
+              <FotosCarousel
+                fotos={prestador.fotos_trabalhos}
+                height="h-56"
+                className="mt-4 rounded-xl overflow-hidden"
+                showEmpty
+              />
+              {(() => {
+                const ft = prestador.fotos_trabalhos;
+                const list = Array.isArray(ft) ? ft : (typeof ft === 'string' ? (() => { try { return JSON.parse(ft); } catch { return []; } })() : []);
+                return list.filter(Boolean).length === 0 ? (
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    Adicione fotos dos seus serviços em{' '}
+                    <a href="/perfil" className="text-blue-500 underline">Meu Perfil</a>{' '}
+                    para atrair mais clientes.
+                  </p>
+                ) : null;
+              })()}
             </CardContent>
           </Card>
         )}
