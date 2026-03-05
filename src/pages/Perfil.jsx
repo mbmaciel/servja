@@ -313,8 +313,8 @@ export default function Perfil() {
                 <button
                   type="button"
                   className="w-24 h-24 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                  onClick={() => foto && setFotoModal(true)}
-                  title={foto ? 'Ver foto ampliada' : undefined}
+                  onClick={() => setFotoModal(true)}
+                  title="Ver foto"
                 >
                   <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
                     <AvatarImage src={foto} />
@@ -658,7 +658,7 @@ export default function Perfil() {
     </div>
 
     {/* Modal de visualização da foto de perfil */}
-    {fotoModal && foto && createPortal(
+    {fotoModal && createPortal(
       <div
         className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-6"
         onClick={() => setFotoModal(false)}
@@ -667,19 +667,25 @@ export default function Perfil() {
           className="relative max-w-sm w-full flex flex-col items-center"
           onClick={(e) => e.stopPropagation()}
         >
-          <img
-            src={foto}
-            alt={user?.full_name}
-            className="w-64 h-64 rounded-full object-cover border-4 border-white shadow-2xl"
-            draggable={false}
-          />
+          {foto ? (
+            <img
+              src={foto}
+              alt={user?.full_name}
+              className="w-64 h-64 rounded-full object-cover border-4 border-white shadow-2xl"
+              draggable={false}
+            />
+          ) : (
+            <div className="w-64 h-64 rounded-full bg-blue-100 border-4 border-white shadow-2xl flex items-center justify-center">
+              <span className="text-blue-600 text-6xl font-bold">{getInitials(user?.full_name)}</span>
+            </div>
+          )}
           <p className="mt-4 text-white font-semibold text-lg">{user?.full_name}</p>
           <div className="mt-4 flex gap-3">
             <button
               className="flex items-center gap-2 bg-white text-gray-800 hover:bg-gray-100 rounded-full px-5 py-2 text-sm font-medium shadow-lg transition-colors"
               onClick={() => { setFotoModal(false); fotoInputRef.current?.click(); }}
             >
-              <Camera className="w-4 h-4" /> Trocar foto
+              <Camera className="w-4 h-4" /> {foto ? 'Trocar foto' : 'Adicionar foto'}
             </button>
             <button
               className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white rounded-full px-5 py-2 text-sm font-medium transition-colors"
