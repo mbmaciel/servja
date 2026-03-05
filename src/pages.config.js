@@ -53,6 +53,7 @@ import Cliente from './pages/Cliente';
 import Home from './pages/Home';
 import Perfil from './pages/Perfil';
 import Prestador from './pages/Prestador';
+import Termos from './pages/Termos';
 import __Layout from './Layout.jsx';
 
 
@@ -63,6 +64,7 @@ export const PAGES = {
     "Home": Home,
     "Perfil": Perfil,
     "Prestador": Prestador,
+    "Termos": Termos,
 }
 
 export const pagesConfig = {

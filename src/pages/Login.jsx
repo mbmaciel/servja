@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Loader2, LogIn, MapPin, UserPlus, X } from 'lucide-react';
+import { Camera, Loader2, LogIn, MapPin, UserPlus, X, ShieldCheck } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,8 @@ export default function Login() {
   const [fotosTrabalhoPreview, setFotosTrabalhoPreview] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
+  const [consentLGPD, setConsentLGPD] = useState(false);
+  const [consentFotos, setConsentFotos] = useState(false);
   const fotoInputRef = useRef(null);
   const fotosTrabalhoInputRef = useRef(null);
 
@@ -175,6 +177,16 @@ export default function Login() {
       return;
     }
 
+    if (!consentLGPD) {
+      toast.error('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.');
+      return;
+    }
+
+    if (registerTab === 'prestador' && !consentFotos) {
+      toast.error('Prestadores precisam autorizar o uso das fotos para exibição na plataforma.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -191,6 +203,9 @@ export default function Login() {
         estado: registerForm.estado.trim() || null,
         numero: registerForm.numero.trim() || null,
         complemento: registerForm.complemento.trim() || null,
+        lgpd_consent_at: new Date().toISOString(),
+        lgpd_consent_version: '1.0',
+        lgpd_consent_fotos: registerTab === 'prestador' ? consentFotos : false,
       };
 
       if (registerTab === 'prestador' && registerForm.preco_base) {
@@ -407,6 +422,7 @@ export default function Login() {
                   removeFoto();
                   setFotosTrabalhoFiles([]);
                   setFotosTrabalhoPreview([]);
+                  setConsentFotos(false);
                 }}
                 className="mb-4"
               >
@@ -578,7 +594,69 @@ export default function Login() {
                     />
                   </div>
 
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
+                  {/* ── Consentimentos LGPD ── */}
+                  <div className="space-y-3 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3 text-blue-700 mb-1">
+                      <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+                      <span className="text-xs font-semibold uppercase tracking-wide">
+                        Consentimento — LGPD (obrigatório)
+                      </span>
+                    </div>
+
+                    {/* Consentimento geral */}
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={consentLGPD}
+                        onChange={(e) => setConsentLGPD(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-blue-600 shrink-0"
+                      />
+                      <span className="text-xs text-gray-700 leading-relaxed">
+                        Li e aceito os{' '}
+                        <Link
+                          to={createPageUrl('Termos')}
+                          target="_blank"
+                          className="text-blue-600 underline font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Termos de Uso e Política de Privacidade
+                        </Link>{' '}
+                        e consinto com o tratamento dos meus dados pessoais conforme a{' '}
+                        <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>.{' '}
+                        <span className="text-red-500">*</span>
+                      </span>
+                    </label>
+
+                    {/* Consentimento de fotos — apenas para prestador */}
+                    {registerTab === 'prestador' && (
+                      <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={consentFotos}
+                          onChange={(e) => setConsentFotos(e.target.checked)}
+                          className="mt-0.5 w-4 h-4 accent-blue-600 shrink-0"
+                        />
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Autorizo o uso das minhas <strong>fotos de perfil e dos serviços cadastrados</strong> para
+                          exibição pública na plataforma ServiJá, inclusive no mapa e nos cards de busca,
+                          conforme descrito na Política de Privacidade.{' '}
+                          <span className="text-red-500">*</span>
+                        </span>
+                      </label>
+                    )}
+
+                    <p className="text-xs text-gray-400">
+                      <span className="text-red-500">*</span> Campo obrigatório para prosseguir com o cadastro.
+                      Você pode revogar o consentimento a qualquer momento em{' '}
+                      <strong>Meu Perfil</strong> ou pelo e-mail{' '}
+                      <span className="text-blue-600">privacidade@sevija.com</span>.
+                    </p>
+                  </div>
+
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={isSubmitting || !consentLGPD || (registerTab === 'prestador' && !consentFotos)}
+                  >
                     {isSubmitting ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (

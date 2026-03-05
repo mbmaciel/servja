@@ -238,7 +238,13 @@ app.post(
       telefone, cep,
       rua, bairro, cidade, estado, numero, complemento,
       preco_base, valor_hora,
+      lgpd_consent_at, lgpd_consent_version, lgpd_consent_fotos,
     } = req.body ?? {};
+
+    // Consentimento LGPD obrigatório
+    if (!lgpd_consent_at) {
+      return res.status(400).json({ message: 'O consentimento com os Termos de Uso e Política de Privacidade é obrigatório.' });
+    }
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
@@ -277,11 +283,16 @@ app.post(
     const plainPassword = String(password);
 
     try {
+      const consentAt = lgpd_consent_at ? new Date(lgpd_consent_at) : new Date();
+      const consentVersion = String(lgpd_consent_version || '1.0').slice(0, 10);
+      const consentFotos = lgpd_consent_fotos ? 1 : 0;
+
       await pool.query(
         `INSERT INTO users
           (id, full_name, email, password_hash, tipo, ativo,
-           telefone, cep, rua, bairro, cidade, estado, numero, complemento)
-         VALUES (?, ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           telefone, cep, rua, bairro, cidade, estado, numero, complemento,
+           lgpd_consent_at, lgpd_consent_version, lgpd_consent_fotos)
+         VALUES (?, ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
           String(full_name).trim(),
@@ -296,6 +307,9 @@ app.post(
           estadoValue,
           numeroValue,
           complementoValue,
+          consentAt,
+          consentVersion,
+          consentFotos,
         ]
       );
     } catch (error) {
@@ -1776,6 +1790,23 @@ const startServer = async () => {
   }
   try { await initAvaliacoesTable(); } catch (e) {
     console.error('[startup] Falha ao inicializar tabela avaliacoes (não crítico):', e.message);
+  }
+
+  // Migração: colunas LGPD na tabela users
+  try {
+    const pool = getPool();
+    const migrations = [
+      "ALTER TABLE users ADD COLUMN lgpd_consent_at DATETIME NULL",
+      "ALTER TABLE users ADD COLUMN lgpd_consent_version VARCHAR(10) NULL",
+      "ALTER TABLE users ADD COLUMN lgpd_consent_fotos TINYINT(1) NOT NULL DEFAULT 0",
+    ];
+    for (const sql of migrations) {
+      try { await pool.query(sql); } catch (e) {
+        if (e.code !== 'ER_DUP_FIELDNAME') throw e; // ignora "column already exists"
+      }
+    }
+  } catch (e) {
+    console.error('[startup] Falha na migração LGPD (não crítico):', e.message);
   }
 
   // Serve uploaded files before SPA catch-all
