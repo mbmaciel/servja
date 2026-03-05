@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
-import { getInitials, getPrecoInicial, buildWhatsappUrl } from '@/utils/prestadorUtils';
+import { getInitials, getPrecoInicial, buildWhatsappUrl, getFotosTrabalhos } from '@/utils/prestadorUtils';
+import FotosCarousel from '@/components/servija/FotosCarousel';
 
 // Fix for default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -86,6 +87,8 @@ export default function MapaPrestadores({
           const whatsapp = buildWhatsappUrl(prestador.telefone);
           const localidade = [prestador.cidade, prestador.estado].filter(Boolean).join(' — ');
 
+          const fotos = getFotosTrabalhos(prestador);
+
           return (
             <Marker
               key={prestador.id}
@@ -93,7 +96,14 @@ export default function MapaPrestadores({
               icon={createCustomIcon(prestador.destaque)}
             >
               <Popup className="custom-popup" minWidth={240} maxWidth={280}>
-                <div className="p-1">
+                <div className="p-0">
+                  {/* Fotos do serviço */}
+                  {fotos.length > 0 && (
+                    <div className="-mx-[1px] -mt-[1px] mb-2 rounded-t overflow-hidden">
+                      <FotosCarousel fotos={fotos} height="h-32" autoplay={false} />
+                    </div>
+                  )}
+                  <div className="px-1 pb-1">
                   {/* Header: avatar + nome + categoria */}
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar className="w-12 h-12 shrink-0">
@@ -179,6 +189,7 @@ export default function MapaPrestadores({
                   >
                     Solicitar Serviço
                   </Button>
+                  </div>{/* fim px-1 pb-1 */}
                 </div>
               </Popup>
             </Marker>
