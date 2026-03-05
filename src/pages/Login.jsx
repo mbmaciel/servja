@@ -649,7 +649,7 @@ export default function Login() {
                       <span className="text-red-500">*</span> Campo obrigatório para prosseguir com o cadastro.
                       Você pode revogar o consentimento a qualquer momento em{' '}
                       <strong>Meu Perfil</strong> ou pelo e-mail{' '}
-                      <span className="text-blue-600">privacidade@sevija.com</span>.
+                      <span className="text-blue-600">contato@jonaspacheco.cloud</span>.
                     </p>
                   </div>
 

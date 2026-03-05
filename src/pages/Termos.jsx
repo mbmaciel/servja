@@ -4,7 +4,7 @@ import { Shield, Lock, Eye, FileText, Users, Camera, Mail, Phone } from 'lucide-
 const VERSAO = '1.0';
 const DATA_VIGENCIA = '05 de março de 2026';
 const CONTROLADOR = 'ServiJá Tecnologia Ltda.';
-const EMAIL_DPO = 'privacidade@sevija.com';
+const EMAIL_DPO = 'contato@jonaspacheco.cloud';
 
 function Section({ icon: Icon, title, children }) {
   return (
