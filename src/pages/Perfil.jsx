@@ -307,9 +307,9 @@ export default function Perfil() {
           ) : (
             <div className="h-40 bg-gradient-to-r from-blue-500 to-blue-600" />
           )}
-          <CardContent className="relative pt-0">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
-              {/* Avatar: clique abre modal; botão camera troca a foto */}
+          <CardContent className="relative pt-0 pb-5">
+            {/* Linha 1: avatar sobrepondo o carrossel + badge no canto direito */}
+            <div className="flex items-end justify-between -mt-12 mb-4">
               <div className="relative w-24 h-24 flex-shrink-0">
                 <button
                   type="button"
@@ -324,7 +324,6 @@ export default function Perfil() {
                     </AvatarFallback>
                   </Avatar>
                 </button>
-                {/* Botão troca foto (camera) */}
                 <button
                   type="button"
                   className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 shadow-lg border-2 border-white transition-colors"
@@ -345,14 +344,6 @@ export default function Perfil() {
                   onChange={handleFotoUpload}
                 />
               </div>
-
-              <div className="flex-1 pb-2">
-                <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-                <p className="text-gray-500">{user?.email}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {foto ? 'Clique na foto para ampliar · ícone de câmera para trocar' : 'Clique no ícone de câmera para adicionar foto'}
-                </p>
-              </div>
               {user?.tipo && (
                 <Badge className={`
                   ${user.tipo === 'admin' ? 'bg-purple-100 text-purple-700' : ''}
@@ -363,6 +354,14 @@ export default function Perfil() {
                   {user.tipo.charAt(0).toUpperCase() + user.tipo.slice(1)}
                 </Badge>
               )}
+            </div>
+            {/* Linha 2: nome e email — sempre em área branca, abaixo do carrossel */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
+              <p className="text-gray-500 text-sm mt-0.5">{user?.email}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {foto ? 'Clique na foto para ampliar · ícone câmera para trocar' : 'Clique no ícone de câmera para adicionar foto'}
+              </p>
             </div>
           </CardContent>
         </Card>
