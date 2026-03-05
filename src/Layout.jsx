@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from './utils';
-import { 
-  Menu, X, Home, User, Briefcase, Settings, LogOut, 
+import {
+  Menu, X, Home, User, Briefcase, Settings, LogOut,
   Search, MapPin, ChevronDown
 } from 'lucide-react';
+import { getInitials } from '@/utils/prestadorUtils';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,11 +40,6 @@ export default function Layout({ children, currentPageName }) {
 
   const handleLogout = () => {
     base44.auth.logout('/');
-  };
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const getDashboardUrl = () => {

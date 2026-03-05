@@ -325,18 +325,21 @@ app.post(
     // Geocodificação e emails em background — não bloqueiam a resposta
     setImmediate(async () => {
       try {
-        const coords = await geocodeByCep({
-          rua: ruaValue,
-          bairro: bairroValue,
-          cidade: cidadeValue,
-          estado: estadoValue,
-          cep: cepDigits,
-        });
-        if (coords) {
-          await pool.query(
-            'UPDATE prestadores SET latitude = ?, longitude = ? WHERE user_id = ?',
-            [coords.latitude, coords.longitude, userId]
-          );
+        // Geocodificação só faz sentido para prestadores (precisam aparecer no mapa)
+        if (normalizedTipo === 'prestador') {
+          const coords = await geocodeByCep({
+            rua: ruaValue,
+            bairro: bairroValue,
+            cidade: cidadeValue,
+            estado: estadoValue,
+            cep: cepDigits,
+          });
+          if (coords) {
+            await pool.query(
+              'UPDATE prestadores SET latitude = ?, longitude = ? WHERE user_id = ?',
+              [coords.latitude, coords.longitude, userId]
+            );
+          }
         }
       } catch (err) {
         console.error('[register] Geocodificação falhou:', err.message);
@@ -736,8 +739,39 @@ app.patch(
         ? parseNullable(prestadorPayload.categoria_id)
         : prestador?.categoria_id || null;
 
-      if (!categoriaId) {
+      // Exige categoria apenas quando há alterações no cadastro do usuário (onboarding completo),
+      // não em atualizações parciais do prestador (ex: salvar fotos_trabalhos logo após registro).
+      if (!categoriaId && userUpdates.length > 0) {
         return res.status(400).json({ message: 'Selecione uma categoria para conta de prestador.' });
+      }
+
+      // Se sem categoria, apenas atualiza os campos do prestador sem criar/alterar perfil completo
+      if (!categoriaId) {
+        if (prestador && Object.keys(prestadorPayload).length > 0) {
+          const partialUpdates = [];
+          const partialValues = [];
+          for (const field of prestadorAllowedFields) {
+            if (!hasOwn(prestadorPayload, field)) continue;
+            if (field === 'servicos' || field === 'fotos_trabalhos') {
+              partialUpdates.push(`${field} = ?`);
+              partialValues.push(JSON.stringify(Array.isArray(prestadorPayload[field]) ? prestadorPayload[field] : []));
+            } else {
+              partialUpdates.push(`${field} = ?`);
+              partialValues.push(parseNullable(prestadorPayload[field]));
+            }
+          }
+          if (partialUpdates.length > 0) {
+            partialValues.push(prestador.id);
+            await pool.query(`UPDATE prestadores SET ${partialUpdates.join(', ')} WHERE id = ?`, partialValues);
+          }
+        }
+        const updatedPrestador = prestador
+          ? (await pool.query('SELECT * FROM prestadores WHERE id = ? LIMIT 1', [prestador.id]))[0][0]
+          : null;
+        return res.json({
+          user: updatedUser,
+          prestador: updatedPrestador ? serializeRow(updatedPrestador) : null,
+        });
       }
 
       const categoriaNomeFallback = hasOwn(prestadorPayload, 'categoria_nome')

@@ -14,51 +14,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { getInitials, getPrecoInicial, getFotosTrabalhos, buildWhatsappUrl } from '@/utils/prestadorUtils';
+
+const WHATSAPP_MSG = 'Quero mais informações. Entrei em contato através do site ServeJa.com';
 
 export default function SolicitarModal({ prestador, open, onOpenChange, user }) {
-  const whatsappMessage = 'Quero mais informações. Entrei em contato  através do site ServeJa.com';
   const [descricao, setDescricao] = useState('');
   const [precoOferta, setPrecoOferta] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const getPrecoMinimoServico = () => {
-    let servicos = prestador?.servicos;
-    if (typeof servicos === 'string') {
-      try {
-        servicos = JSON.parse(servicos);
-      } catch {
-        servicos = [];
-      }
-    }
-
-    if (!Array.isArray(servicos)) return null;
-
-    const precos = servicos
-      .map((servico) => Number(servico?.preco))
-      .filter((preco) => Number.isFinite(preco) && preco >= 0);
-
-    if (precos.length === 0) return null;
-    return Math.min(...precos);
-  };
-
-  const precoReferencia = getPrecoMinimoServico();
-
-  const getInitials = (name) => {
-    if (!name) return 'P';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const buildWhatsappUrl = (telefone) => {
-    const digits = String(telefone || '').replace(/\D/g, '');
-    if (!digits) return null;
-
-    const phone = digits.length <= 11 ? `55${digits}` : digits;
-    return `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`;
-  };
+  const precoReferencia = getPrecoInicial(prestador);
 
   const handleWhatsappClick = () => {
-    const whatsappUrl = buildWhatsappUrl(prestador?.telefone);
-
+    const whatsappUrl = buildWhatsappUrl(prestador?.telefone, WHATSAPP_MSG);
     if (!whatsappUrl) {
       toast.error('Telefone do prestador não disponível para WhatsApp');
       return;
@@ -121,14 +89,7 @@ export default function SolicitarModal({ prestador, open, onOpenChange, user }) 
 
   if (!prestador) return null;
 
-  const fotos = (() => {
-    const ft = prestador?.fotos_trabalhos;
-    if (Array.isArray(ft)) return ft.filter(Boolean);
-    if (typeof ft === 'string') {
-      try { return JSON.parse(ft).filter(Boolean); } catch { return []; }
-    }
-    return [];
-  })();
+  const fotos = getFotosTrabalhos(prestador);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

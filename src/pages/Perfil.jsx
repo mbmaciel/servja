@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getInitials } from '@/utils/prestadorUtils';
 
 export default function Perfil() {
   const [user, setUser] = useState(null);
@@ -230,11 +231,6 @@ export default function Perfil() {
       setCarouselIndex(i => Math.min(i, Math.max(0, next.length - 1)));
       return next;
     });
-  };
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const formatCep = (value) => {

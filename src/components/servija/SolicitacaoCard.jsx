@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials } from '@/utils/prestadorUtils';
 import {
   Card,
   CardContent,
@@ -51,11 +52,6 @@ export default function SolicitacaoCard({
 }) {
   const status = statusConfig[solicitacao.status] || statusConfig.aberto;
   const StatusIcon = status.icon;
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
 
   const outraParte = tipo === 'cliente' 
     ? { nome: solicitacao.prestador_nome, email: solicitacao.prestador_email }

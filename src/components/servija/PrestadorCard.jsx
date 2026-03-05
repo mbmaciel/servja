@@ -4,39 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import FotosCarousel from '@/components/servija/FotosCarousel';
+import { getInitials, getPrecoInicial, getFotosTrabalhos } from '@/utils/prestadorUtils';
 
 export default function PrestadorCard({ prestador, onSolicitar, compact = false }) {
-  const getInitials = (name) => {
-    if (!name) return 'P';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const getPrecoInicial = () => {
-    let servicos = prestador?.servicos;
-    if (typeof servicos === 'string') {
-      try { servicos = JSON.parse(servicos); } catch { servicos = []; }
-    }
-    if (Array.isArray(servicos)) {
-      const precos = servicos
-        .map((s) => Number(s?.preco))
-        .filter((p) => Number.isFinite(p) && p >= 0);
-      if (precos.length > 0) return Math.min(...precos);
-    }
-    if (typeof prestador?.preco_base === 'number') return prestador.preco_base;
-    return null;
-  };
-
-  const getFotos = () => {
-    const ft = prestador?.fotos_trabalhos;
-    if (Array.isArray(ft)) return ft.filter(Boolean);
-    if (typeof ft === 'string') {
-      try { return JSON.parse(ft).filter(Boolean); } catch { return []; }
-    }
-    return [];
-  };
-
-  const precoInicial = getPrecoInicial();
-  const fotos = getFotos();
+  const precoInicial = getPrecoInicial(prestador);
+  const fotos = getFotosTrabalhos(prestador);
   const temFotos = fotos.length > 0;
 
   if (compact) {

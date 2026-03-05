@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
+import { getInitials, getPrecoInicial, buildWhatsappUrl } from '@/utils/prestadorUtils';
 
 // Fix for default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -44,31 +45,6 @@ function MapController({ center }) {
   return null;
 }
 
-const getInitials = (name) => {
-  if (!name) return 'P';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-};
-
-const getPrecoInicial = (prestador) => {
-  let servicos = prestador?.servicos;
-  if (typeof servicos === 'string') {
-    try { servicos = JSON.parse(servicos); } catch { servicos = []; }
-  }
-  if (Array.isArray(servicos)) {
-    const precos = servicos
-      .map((s) => Number(s?.preco))
-      .filter((p) => Number.isFinite(p) && p >= 0);
-    if (precos.length > 0) return Math.min(...precos);
-  }
-  return typeof prestador?.preco_base === 'number' ? prestador.preco_base : null;
-};
-
-const formatWhatsApp = (telefone) => {
-  if (!telefone) return null;
-  const digits = String(telefone).replace(/\D/g, '');
-  if (digits.length < 10) return null;
-  return `https://wa.me/55${digits}`;
-};
 
 export default function MapaPrestadores({
   prestadores,
@@ -107,7 +83,7 @@ export default function MapaPrestadores({
 
         {prestadoresComLocalizacao.map((prestador) => {
           const preco = getPrecoInicial(prestador);
-          const whatsapp = formatWhatsApp(prestador.telefone);
+          const whatsapp = buildWhatsappUrl(prestador.telefone);
           const localidade = [prestador.cidade, prestador.estado].filter(Boolean).join(' — ');
 
           return (

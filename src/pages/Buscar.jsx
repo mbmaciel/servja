@@ -7,6 +7,7 @@ import PrestadorCard from '@/components/servija/PrestadorCard';
 import FiltrosBusca from '@/components/servija/FiltrosBusca';
 import MapaPrestadores from '@/components/servija/MapaPrestadores';
 import SolicitarModal from '@/components/servija/SolicitarModal';
+import { getPrecoInicial } from '@/utils/prestadorUtils';
 
 export default function Buscar() {
   const [searchParams] = useSearchParams();
@@ -35,33 +36,6 @@ export default function Buscar() {
   useEffect(() => {
     applyFilters();
   }, [filtros, prestadores]);
-
-  const getPrecoInicial = (prestador) => {
-    let servicos = prestador?.servicos;
-    if (typeof servicos === 'string') {
-      try {
-        servicos = JSON.parse(servicos);
-      } catch {
-        servicos = [];
-      }
-    }
-
-    if (Array.isArray(servicos)) {
-      const precos = servicos
-        .map((servico) => Number(servico?.preco))
-        .filter((preco) => Number.isFinite(preco) && preco >= 0);
-
-      if (precos.length > 0) {
-        return Math.min(...precos);
-      }
-    }
-
-    if (typeof prestador?.preco_base === 'number') {
-      return prestador.preco_base;
-    }
-
-    return 0;
-  };
 
   const loadData = async () => {
     setIsLoading(true);
