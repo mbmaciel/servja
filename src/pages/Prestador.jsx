@@ -179,24 +179,24 @@ export default function Prestador() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 py-4 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
                 Painel do Prestador
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 mt-0.5">
                 Gerencie seus serviços e solicitações
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={loadData}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={loadData}>
+                <RefreshCw className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Atualizar</span>
               </Button>
               <a href="/Perfil">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Edit className="w-4 h-4 mr-2" />
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  <Edit className="w-4 h-4 mr-1 sm:mr-2" />
                   Editar Perfil
                 </Button>
               </a>
@@ -206,51 +206,25 @@ export default function Prestador() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{counts.all}</p>
-                <p className="text-sm text-gray-500">Total</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{counts.aberto}</p>
-                <p className="text-sm text-gray-500">Pendentes</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {[
+            { icon: FileText, color: 'blue', value: counts.all, label: 'Total' },
+            { icon: Clock, color: 'yellow', value: counts.aberto, label: 'Pendentes' },
+            { icon: CheckCircle, color: 'green', value: counts.aceito, label: 'Andamento' },
+            { icon: Briefcase, color: 'indigo', value: servicosCount, label: 'Serviços' },
+          ].map(({ icon: Icon, color, value, label }) => (
+            <div key={label} className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-${color}-100 rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 text-${color}-600`} />
+                </div>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{value}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">{label}</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{counts.aceito}</p>
-                <p className="text-sm text-gray-500">Em Andamento</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <Briefcase className="w-5 h-5 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{servicosCount}</p>
-                <p className="text-sm text-gray-500">Serviços</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
         {prestador && (
@@ -316,22 +290,22 @@ export default function Prestador() {
           </Card>
         )}
 
-        <Tabs defaultValue="aberto" className="space-y-6">
-          <TabsList className="bg-white border border-gray-200">
-            <TabsTrigger value="aberto">Pendentes ({counts.aberto})</TabsTrigger>
-            <TabsTrigger value="aceito">Em Andamento ({counts.aceito})</TabsTrigger>
-            <TabsTrigger value="concluido">Concluídos ({counts.concluido})</TabsTrigger>
-            <TabsTrigger value="all">Todos ({counts.all})</TabsTrigger>
+        <Tabs defaultValue="aberto" className="space-y-4">
+          <TabsList className="bg-white border border-gray-200 grid grid-cols-2 sm:flex h-auto p-1 gap-1">
+            <TabsTrigger value="aberto" className="text-xs sm:text-sm py-2">Pendentes ({counts.aberto})</TabsTrigger>
+            <TabsTrigger value="aceito" className="text-xs sm:text-sm py-2">Andamento ({counts.aceito})</TabsTrigger>
+            <TabsTrigger value="concluido" className="text-xs sm:text-sm py-2">Concluídos ({counts.concluido})</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs sm:text-sm py-2">Todos ({counts.all})</TabsTrigger>
           </TabsList>
 
           {['aberto', 'aceito', 'concluido', 'all'].map((status) => (
             <TabsContent key={status} value={status} className="space-y-4">
               {getFilteredSolicitacoes(status).length === 0 ? (
-                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText className="w-8 h-8 text-gray-400" />
+                <div className="bg-white rounded-xl p-6 sm:p-12 text-center shadow-sm border border-gray-100">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                     Nenhuma solicitação
                   </h3>
                   <p className="text-gray-500">

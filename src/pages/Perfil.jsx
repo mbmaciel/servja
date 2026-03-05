@@ -292,12 +292,12 @@ export default function Perfil() {
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-          <p className="text-gray-500 mt-1">Gerencie suas informações pessoais</p>
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Meu Perfil</h1>
+          <p className="text-sm text-gray-500 mt-1">Gerencie suas informações pessoais</p>
         </div>
 
         {/* Profile Card com foto */}
@@ -357,8 +357,8 @@ export default function Perfil() {
             </div>
             {/* Linha 2: nome e email — sempre em área branca, abaixo do carrossel */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-              <p className="text-gray-500 text-sm mt-0.5">{user?.email}</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{user?.full_name}</h2>
+              <p className="text-gray-500 text-xs sm:text-sm mt-0.5">{user?.email}</p>
               <p className="text-xs text-gray-400 mt-1">
                 {foto ? 'Clique na foto para ampliar · ícone câmera para trocar' : 'Clique no ícone de câmera para adicionar foto'}
               </p>
