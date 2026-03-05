@@ -7,11 +7,12 @@ const AUTOPLAY_INTERVAL = 4000; // ms
 /**
  * Carrossel read-only de fotos de serviços do prestador.
  * Props:
- *   fotos      – string[] (URLs) ou JSON string
- *   height     – className de altura (default 'h-48')
- *   className  – classes extras no wrapper
- *   showEmpty  – exibe placeholder quando sem fotos
- *   autoplay   – inicia autoplay automático (default true)
+ *   fotos            – string[] (URLs) ou JSON string
+ *   height           – className de altura (default 'h-48')
+ *   className        – classes extras no wrapper
+ *   showEmpty        – exibe placeholder quando sem fotos
+ *   autoplay         – inicia autoplay automático (default true)
+ *   alwaysShowArrows – setas sempre visíveis, sem depender de hover (default false)
  */
 export default function FotosCarousel({
   fotos = [],
@@ -19,6 +20,7 @@ export default function FotosCarousel({
   className = '',
   showEmpty = false,
   autoplay = true,
+  alwaysShowArrows = false,
 }) {
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(null); // índice ou null
@@ -143,14 +145,14 @@ export default function FotosCarousel({
           <>
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/65 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              className={`absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/65 text-white rounded-full p-1.5 transition-opacity ${alwaysShowArrows ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
               aria-label="Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/65 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              className={`absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/65 text-white rounded-full p-1.5 transition-opacity ${alwaysShowArrows ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
               aria-label="Próxima"
             >
               <ChevronRight className="w-4 h-4" />

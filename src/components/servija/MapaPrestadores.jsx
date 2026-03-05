@@ -100,7 +100,7 @@ export default function MapaPrestadores({
                   {/* Fotos do serviço */}
                   {fotos.length > 0 && (
                     <div className="-mx-[1px] -mt-[1px] mb-2 rounded-t overflow-hidden">
-                      <FotosCarousel fotos={fotos} height="h-32" autoplay={false} />
+                      <FotosCarousel fotos={fotos} height="h-32" autoplay alwaysShowArrows />
                     </div>
                   )}
                   <div className="px-1 pb-1">
