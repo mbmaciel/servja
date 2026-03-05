@@ -1,5 +1,33 @@
 import { apiRequest, tokenStorage } from '@/api/httpClient';
 
+// Comprime imagem via Canvas antes do upload. Pula arquivos < 500 KB.
+function compressImage(file, maxWidth = 1600, quality = 0.85) {
+  if (file.size < 500 * 1024) return Promise.resolve(file);
+  return new Promise((resolve) => {
+    const img = new Image();
+    const blobUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file),
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
+    img.src = blobUrl;
+  });
+}
+
 const createQueryString = (params = {}) => {
   const searchParams = new URLSearchParams();
 
@@ -130,8 +158,9 @@ const profile = {
     });
   },
   async uploadFoto(file) {
+    const compressed = await compressImage(file, 1200, 0.85);
     const form = new FormData();
-    form.append('foto', file);
+    form.append('foto', compressed);
     const token = tokenStorage.get();
     const res = await fetch('/api/profile/foto', {
       method: 'POST',
@@ -145,8 +174,9 @@ const profile = {
     return (await res.json()).url;
   },
   async uploadFotoTrabalho(file) {
+    const compressed = await compressImage(file, 1600, 0.85);
     const form = new FormData();
-    form.append('foto', file);
+    form.append('foto', compressed);
     const token = tokenStorage.get();
     const res = await fetch('/api/profile/fotos-trabalhos', {
       method: 'POST',
