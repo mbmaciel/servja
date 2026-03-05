@@ -975,9 +975,9 @@ app.post('/api/profile/foto', requireAuth, (req, res, next) => {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
     const fotoUrl = `/uploads/profile/${req.file.filename}`;
     // Atualiza foto no registro do prestador, se existir
-    getPool()
-      .query('UPDATE prestadores SET foto = ? WHERE user_id = ?', [fotoUrl, req.currentUser.id])
-      .catch(() => {});
+    try {
+      await getPool().query('UPDATE prestadores SET foto = ? WHERE user_id = ?', [fotoUrl, req.currentUser.id]);
+    } catch {}
     res.json({ url: fotoUrl });
   });
 });

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getInitials } from '@/utils/prestadorUtils';
+import FotosCarousel from '@/components/servija/FotosCarousel';
 
 export default function Perfil() {
   const [user, setUser] = useState(null);
@@ -298,7 +299,11 @@ export default function Perfil() {
 
         {/* Profile Card com foto */}
         <Card className="mb-6 overflow-hidden">
-          <div className="h-24 bg-gradient-to-r from-blue-500 to-blue-600" />
+          {fotosTrabalhos.length > 0 ? (
+            <FotosCarousel fotos={fotosTrabalhos} height="h-32" autoplay alwaysShowArrows={false} />
+          ) : (
+            <div className="h-32 bg-gradient-to-r from-blue-500 to-blue-600" />
+          )}
           <CardContent className="relative pt-0">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
               {/* Avatar com botão de upload */}
