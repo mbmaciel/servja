@@ -35,7 +35,7 @@ const uploadProfilePhoto = multer({
     destination: (_req, _file, cb) => cb(null, UPLOADS_PROFILE_DIR),
     filename: (_req, file, cb) => cb(null, `${randomUUID()}${path.extname(file.originalname)}`),
   }),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 12 * 1024 * 1024 },
   fileFilter: imageFilter,
 });
 
@@ -44,7 +44,7 @@ const uploadTrabalhoPhoto = multer({
     destination: (_req, _file, cb) => cb(null, UPLOADS_TRABALHOS_DIR),
     filename: (_req, file, cb) => cb(null, `${randomUUID()}${path.extname(file.originalname)}`),
   }),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 12 * 1024 * 1024 },
   fileFilter: imageFilter,
 });
 
@@ -968,7 +968,7 @@ app.post('/api/profile/foto', requireAuth, (req, res, next) => {
   uploadProfilePhoto.single('foto')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ message: 'Imagem muito grande. Limite: 10 MB.' });
+        return res.status(413).json({ message: 'Imagem muito grande. Limite: 12 MB.' });
       }
       return next(err);
     }
@@ -987,7 +987,7 @@ app.post('/api/profile/fotos-trabalhos', requireAuth, (req, res, next) => {
   uploadTrabalhoPhoto.single('foto')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ message: 'Imagem muito grande. Limite: 10 MB.' });
+        return res.status(413).json({ message: 'Imagem muito grande. Limite: 12 MB.' });
       }
       return next(err);
     }
