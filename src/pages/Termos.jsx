@@ -3,7 +3,7 @@ import { Shield, Lock, Eye, FileText, Users, Camera, Mail, Phone } from 'lucide-
 
 const VERSAO = '1.0';
 const DATA_VIGENCIA = '05 de março de 2026';
-const CONTROLADOR = 'ServiJá Tecnologia Ltda.';
+const CONTROLADOR = 'SeviJa Tecnologia Ltda.';
 const EMAIL_DPO = 'contato@jonaspacheco.cloud';
 
 function Section({ icon: Icon, title, children }) {
@@ -38,7 +38,7 @@ export default function Termos() {
             </div>
           </div>
           <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg p-4">
-            Este documento rege a relação entre você e o <strong>ServiJá</strong> e foi elaborado em
+            Este documento rege a relação entre você e o <strong>SeviJa</strong> e foi elaborado em
             conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>,
             o Código de Defesa do Consumidor (Lei nº 8.078/1990) e o Marco Civil da Internet
             (Lei nº 12.965/2014). Ao se cadastrar, você declara ter lido, compreendido e aceitado
@@ -52,12 +52,12 @@ export default function Termos() {
           <Section icon={FileText} title="1. Identificação do Controlador de Dados">
             <p>
               <strong>Controlador:</strong> {CONTROLADOR}<br />
-              <strong>Plataforma:</strong> ServiJá (sevija.com)<br />
+              <strong>Plataforma:</strong> SeviJa (sevija.com)<br />
               <strong>Encarregado de Dados (DPO):</strong>{' '}
               <a href={`mailto:${EMAIL_DPO}`} className="text-blue-600 underline">{EMAIL_DPO}</a>
             </p>
             <p>
-              O ServiJá é uma plataforma digital que conecta prestadores de serviços a clientes
+              O SeviJa é uma plataforma digital que conecta prestadores de serviços a clientes
               que buscam profissionais qualificados. Atuamos como controlador dos dados pessoais
               coletados durante o uso da plataforma.
             </p>
@@ -122,7 +122,7 @@ export default function Termos() {
           <Section icon={Camera} title="4. Uso de Imagens e Fotos">
             <p>
               Ao cadastrar foto de perfil ou fotos de serviços realizados, o prestador concede ao
-              ServiJá uma <strong>licença não exclusiva, gratuita e revogável</strong> para:
+              SeviJa uma <strong>licença não exclusiva, gratuita e revogável</strong> para:
             </p>
             <ul className="list-disc list-inside ml-2 space-y-1">
               <li>Exibir as imagens publicamente na plataforma (cards de busca, mapa, modal de solicitação)</li>
@@ -159,7 +159,7 @@ export default function Termos() {
               </li>
             </ul>
             <p>
-              O ServiJá <strong>não vende, não aluga e não comercializa</strong> dados pessoais de
+              O SeviJa <strong>não vende, não aluga e não comercializa</strong> dados pessoais de
               seus usuários.
             </p>
           </Section>
@@ -227,7 +227,7 @@ export default function Termos() {
 
           {/* 9. Uso Aceitável */}
           <Section icon={Users} title="9. Termos de Uso da Plataforma">
-            <p>Ao utilizar o ServiJá, você concorda em:</p>
+            <p>Ao utilizar o SeviJa, você concorda em:</p>
             <ul className="list-disc list-inside ml-2 space-y-1">
               <li>Fornecer informações verdadeiras, completas e atualizadas</li>
               <li>Não utilizar a plataforma para fins ilegais ou fraudulentos</li>
@@ -237,7 +237,7 @@ export default function Termos() {
               <li>Honrar os acordos firmados com outros usuários através da plataforma</li>
             </ul>
             <p>
-              O ServiJá reserva-se o direito de suspender ou encerrar contas que violem estes
+              O SeviJa reserva-se o direito de suspender ou encerrar contas que violem estes
               termos, sem aviso prévio, em casos graves.
             </p>
           </Section>
@@ -277,7 +277,7 @@ export default function Termos() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          ServiJá — Conectando pessoas a serviços de qualidade · Versão {VERSAO} · {DATA_VIGENCIA}
+          SeviJa — Conectando pessoas a serviços de qualidade · Versão {VERSAO} · {DATA_VIGENCIA}
         </p>
       </div>
     </div>

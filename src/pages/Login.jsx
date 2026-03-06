@@ -366,7 +366,7 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Entrar no ServiJá</CardTitle>
+          <CardTitle>Entrar no SeviJa</CardTitle>
           <CardDescription>
             Use suas credenciais ou crie uma conta.
           </CardDescription>
@@ -638,7 +638,7 @@ export default function Login() {
                         />
                         <span className="text-xs text-gray-700 leading-relaxed">
                           Autorizo o uso das minhas <strong>fotos de perfil e dos serviços cadastrados</strong> para
-                          exibição pública na plataforma ServiJá, inclusive no mapa e nos cards de busca,
+                          exibição pública na plataforma SeviJa, inclusive no mapa e nos cards de busca,
                           conforme descrito na Política de Privacidade.{' '}
                           <span className="text-red-500">*</span>
                         </span>

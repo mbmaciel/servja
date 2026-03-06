@@ -39,17 +39,17 @@ export async function sendWelcomeEmail(user, plainPassword) {
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"ServiJá" <${SMTP_FROM}>`,
+    from: `"SeviJa" <${SMTP_FROM}>`,
     to: user.email,
-    subject: `Bem-vindo ao ServiJá, ${user.full_name}!`,
+    subject: `Bem-vindo ao SeviJa, ${user.full_name}!`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
 
         <!-- Cabeçalho com logo -->
         <div style="background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%); border-radius: 12px 12px 0 0; padding: 32px 20px; text-align: center;">
-          <img src="${logoUrl}" alt="ServiJá" width="90" height="90"
+          <img src="${logoUrl}" alt="SeviJa" width="90" height="90"
                style="border-radius: 20px; display: block; margin: 0 auto 16px;" />
-          <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">ServiJá</h1>
+          <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">SeviJa</h1>
           <p style="margin: 6px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Serviços na sua região</p>
         </div>
 
@@ -99,7 +99,7 @@ export async function sendWelcomeEmail(user, plainPassword) {
         <!-- Rodapé -->
         <div style="background: #f1f5f9; border-radius: 0 0 12px 12px; padding: 16px 28px; text-align: center;">
           <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-            © 2026 ServiJá &nbsp;·&nbsp;
+            © 2026 SeviJa &nbsp;·&nbsp;
             <a href="${appUrl}" style="color: #3b82f6; text-decoration: none;">${appUrl.replace('https://', '')}</a>
           </p>
         </div>
@@ -123,7 +123,7 @@ export async function sendAvaliacaoEmail({ cliente_email, cliente_nome, prestado
     const transporter = createTransporter();
 
     await transporter.sendMail({
-      from: `"ServiJá" <${SMTP_FROM}>`,
+      from: `"SeviJa" <${SMTP_FROM}>`,
       to: cliente_email,
       subject: 'Seu serviço foi concluído — avalie o atendimento',
       html: `
@@ -150,7 +150,7 @@ export async function sendAvaliacaoEmail({ cliente_email, cliente_nome, prestado
           </p>
 
           <p style="color: #9ca3af; font-size: 12px; margin-top: 30px;">
-            Este é um email automático do ServiJá. Não responda a este email.
+            Este é um email automático do SeviJa. Não responda a este email.
           </p>
         </div>
       `,
@@ -180,9 +180,9 @@ export async function notifyAdmins(pool, newUser) {
   const adminEmails = adminRows.map((a) => a.email);
 
   await transporter.sendMail({
-    from: `"ServiJá" <${SMTP_FROM}>`,
+    from: `"SeviJa" <${SMTP_FROM}>`,
     to: adminEmails,
-    subject: `[ServiJá] Novo ${tipoLabel} cadastrado: ${newUser.full_name}`,
+    subject: `[SeviJa] Novo ${tipoLabel} cadastrado: ${newUser.full_name}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h3 style="color: #2563eb;">Novo cadastro na plataforma</h3>
@@ -194,7 +194,7 @@ export async function notifyAdmins(pool, newUser) {
           <tr><td style="padding: 6px 0; color: #6b7280;">Cidade</td><td>${newUser.cidade ? `${newUser.cidade}/${newUser.estado}` : '-'}</td></tr>
         </table>
         <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">
-          Este é um email automático do ServiJá.
+          Este é um email automático do SeviJa.
         </p>
       </div>
     `,

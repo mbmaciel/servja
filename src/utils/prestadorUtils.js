@@ -61,7 +61,7 @@ export const getFotosTrabalhos = (prestador) => {
 /**
  * Constrói URL de WhatsApp com mensagem padrão.
  */
-export const buildWhatsappUrl = (telefone, message = 'Olá! Vi seu perfil no ServiJá e gostaria de mais informações.') => {
+export const buildWhatsappUrl = (telefone, message = 'Olá! Vi seu perfil no SeviJa e gostaria de mais informações.') => {
   const digits = String(telefone || '').replace(/\D/g, '');
   if (!digits) return null;
   const phone = digits.length <= 11 ? `55${digits}` : digits;

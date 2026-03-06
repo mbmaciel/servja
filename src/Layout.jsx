@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { createPageUrl } from './utils';
 import {
   Menu, X, Home, User, Briefcase, Settings, LogOut,
-  Search, MapPin, ChevronDown
+  Search, ChevronDown
 } from 'lucide-react';
 import { getInitials } from '@/utils/prestadorUtils';
 import { Button } from "@/components/ui/button";
@@ -71,11 +71,9 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
+              <img src="/logo-sevja.jpg" alt="SeviJa" className="w-10 h-10 rounded-xl object-cover" />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ServiJá
+                SeviJa
               </span>
             </Link>
 

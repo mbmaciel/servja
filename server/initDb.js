@@ -116,7 +116,7 @@ const defaultCategories = [
 
 const defaultUsers = [
   {
-    full_name: 'Administrador ServiJá',
+    full_name: 'Administrador SeviJa',
     email: 'admin@servija.local',
     password: 'admin123',
     tipo: 'admin',

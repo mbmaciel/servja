@@ -1814,7 +1814,7 @@ const startServer = async () => {
   maybeServeStatic();
 
   app.listen(config.port, () => {
-    console.log(`ServiJá API rodando em http://localhost:${config.port}`);
+    console.log(`SeviJa API rodando em http://localhost:${config.port}`);
   });
 };
 
