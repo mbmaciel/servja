@@ -6,10 +6,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import FotosCarousel from '@/components/servija/FotosCarousel';
 import { getInitials, getPrecoInicial, getFotosTrabalhos } from '@/utils/prestadorUtils';
 
+function getEspecialidades(prestador) {
+  const esp = prestador?.especialidades;
+  if (Array.isArray(esp)) return esp;
+  if (typeof esp === 'string') { try { return JSON.parse(esp); } catch { return []; } }
+  return [];
+}
+
 export default function PrestadorCard({ prestador, onSolicitar, compact = false }) {
   const precoInicial = getPrecoInicial(prestador);
   const fotos = getFotosTrabalhos(prestador);
   const temFotos = fotos.length > 0;
+  const especialidades = getEspecialidades(prestador);
 
   if (compact) {
     return (
@@ -81,9 +89,21 @@ export default function PrestadorCard({ prestador, onSolicitar, compact = false 
               <h3 className="font-bold text-lg text-gray-900">{prestador.nome}</h3>
               {prestador.destaque && <BadgeCheck className="w-5 h-5 text-blue-500" />}
             </div>
-            <Badge variant="secondary" className="mt-1 bg-blue-50 text-blue-700 hover:bg-blue-50">
-              {prestador.categoria_nome}
-            </Badge>
+            <div className="flex flex-wrap gap-1 mt-1">
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50">
+                {prestador.categoria_nome}
+              </Badge>
+              {especialidades.slice(0, 3).map((esp, i) => (
+                <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-100 text-xs">
+                  {esp?.nome || esp}
+                </Badge>
+              ))}
+              {especialidades.length > 3 && (
+                <Badge variant="secondary" className="bg-gray-100 text-gray-500 text-xs">
+                  +{especialidades.length - 3}
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />

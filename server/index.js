@@ -615,6 +615,7 @@ app.patch(
     const prestadorAllowedFields = [
       'tipo_empresa',
       'descricao',
+      'especialidades',
       'servicos',
       'valor_hora',
       'preco_base',
@@ -766,7 +767,7 @@ app.patch(
           const partialValues = [];
           for (const field of prestadorAllowedFields) {
             if (!hasOwn(prestadorPayload, field)) continue;
-            if (field === 'servicos' || field === 'fotos_trabalhos') {
+            if (field === 'servicos' || field === 'fotos_trabalhos' || field === 'especialidades') {
               partialUpdates.push(`${field} = ?`);
               partialValues.push(JSON.stringify(Array.isArray(prestadorPayload[field]) ? prestadorPayload[field] : []));
             } else {
@@ -919,7 +920,7 @@ app.patch(
             continue;
           }
 
-          if (field === 'servicos' || field === 'fotos_trabalhos') {
+          if (field === 'servicos' || field === 'fotos_trabalhos' || field === 'especialidades') {
             setPrestadorField(field, JSON.stringify(Array.isArray(prestadorPayload[field]) ? prestadorPayload[field] : []));
             continue;
           }
@@ -1799,6 +1800,7 @@ const startServer = async () => {
       "ALTER TABLE users ADD COLUMN lgpd_consent_at DATETIME NULL",
       "ALTER TABLE users ADD COLUMN lgpd_consent_version VARCHAR(10) NULL",
       "ALTER TABLE users ADD COLUMN lgpd_consent_fotos TINYINT(1) NOT NULL DEFAULT 0",
+      "ALTER TABLE prestadores ADD COLUMN especialidades JSON NULL",
     ];
     for (const sql of migrations) {
       try { await pool.query(sql); } catch (e) {

@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import {
   User, Mail, Phone, Save, Loader2, Building, Shield, Calendar, CreditCard, Home,
-  Camera, Plus, X, ChevronLeft, ChevronRight, ImageIcon, Trash2
+  Camera, Plus, X, ImageIcon, Trash2, FileText, Tag
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,7 +39,6 @@ export default function Perfil() {
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
   const [fotoModal, setFotoModal] = useState(false);
   const [isUploadingTrabalho, setIsUploadingTrabalho] = useState(false);
-  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const cepLookupTimeoutRef = useRef(null);
   const cepAbortControllerRef = useRef(null);
@@ -67,6 +67,10 @@ export default function Perfil() {
   // Photo state (separate from formData to avoid coupling)
   const [foto, setFoto] = useState('');
   const [fotosTrabalhos, setFotosTrabalhos] = useState([]);
+
+  // Prestador-specific extended state
+  const [descricao, setDescricao] = useState('');
+  const [especialidades, setEspecialidades] = useState([]); // array of categoria_id strings
 
   useEffect(() => {
     loadUser();
@@ -97,7 +101,12 @@ export default function Perfil() {
       setFoto(prestadorData?.foto || userData?.avatar || '');
       const ft = prestadorData?.fotos_trabalhos;
       setFotosTrabalhos(Array.isArray(ft) ? ft : []);
-      setCarouselIndex(0);
+
+      // Load prestador-specific extended fields
+      setDescricao(prestadorData?.descricao || '');
+      const esp = prestadorData?.especialidades;
+      // especialidades stored as [{id, nome}] objects
+      setEspecialidades(Array.isArray(esp) ? esp.filter(e => e && e.id) : []);
 
       setFormData({
         full_name: userData.full_name || '',
@@ -175,6 +184,8 @@ export default function Perfil() {
                 categoria_id: formData.categoria_id,
                 categoria_nome: categoriaSelecionada?.nome || '',
                 preco_base: precoBaseNumero,
+                descricao: descricao.trim() || null,
+                especialidades,
                 foto: foto || null,
                 fotos_trabalhos: fotosTrabalhos,
               }
@@ -208,17 +219,20 @@ export default function Perfil() {
     }
   };
 
+  const MAX_FOTOS = 5;
+
   const handleTrabalhoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (fotosTrabalhos.length >= MAX_FOTOS) {
+      toast.error(`Limite de ${MAX_FOTOS} fotos atingido. Remova uma foto antes de adicionar outra.`);
+      e.target.value = '';
+      return;
+    }
     setIsUploadingTrabalho(true);
     try {
       const url = await base44.profile.uploadFotoTrabalho(file);
-      setFotosTrabalhos(prev => {
-        const next = [...prev, url];
-        setCarouselIndex(next.length - 1);
-        return next;
-      });
+      setFotosTrabalhos(prev => [...prev, url]);
       toast.success('Foto adicionada.');
     } catch (err) {
       toast.error(err.message || 'Erro ao fazer upload.');
@@ -229,11 +243,7 @@ export default function Perfil() {
   };
 
   const handleRemoveTrabalho = (index) => {
-    setFotosTrabalhos(prev => {
-      const next = prev.filter((_, i) => i !== index);
-      setCarouselIndex(i => Math.min(i, Math.max(0, next.length - 1)));
-      return next;
-    });
+    setFotosTrabalhos(prev => prev.filter((_, i) => i !== index));
   };
 
   const formatCep = (value) => {
@@ -503,7 +513,7 @@ export default function Perfil() {
             {formData.tipo === 'prestador' && (
               <>
                 <div className="space-y-2">
-                  <Label>Categoria de Serviço *</Label>
+                  <Label>Categoria Principal *</Label>
                   <Select
                     value={formData.categoria_id || ''}
                     onValueChange={(v) => setFormData({ ...formData, categoria_id: v })}
@@ -515,6 +525,67 @@ export default function Perfil() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-400">Categoria principal exibida na busca</p>
+                </div>
+
+                {/* Especialidades adicionais */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-gray-500" /> Especialidades Adicionais
+                  </Label>
+                  <p className="text-xs text-gray-400">Selecione todas as funções que você realiza</p>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {categorias.map((c) => {
+                      const checked = especialidades.some(e => e.id === c.id);
+                      return (
+                        <label
+                          key={c.id}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors
+                            ${checked
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={checked}
+                            onChange={() => {
+                              setEspecialidades(prev =>
+                                checked
+                                  ? prev.filter(e => e.id !== c.id)
+                                  : [...prev, { id: c.id, nome: c.nome }]
+                              );
+                            }}
+                          />
+                          <span className={`w-4 h-4 flex-shrink-0 rounded border-2 flex items-center justify-center
+                            ${checked ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}
+                          >
+                            {checked && <span className="text-white text-xs font-bold">✓</span>}
+                          </span>
+                          {c.nome}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {especialidades.length > 0 && (
+                    <p className="text-xs text-blue-600">{especialidades.length} especialidade(s) selecionada(s)</p>
+                  )}
+                </div>
+
+                {/* Descrição */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-gray-500" /> Sobre meu trabalho
+                  </Label>
+                  <Textarea
+                    placeholder="Descreva sua experiência, diferenciais e tipos de serviços que você realiza..."
+                    value={descricao}
+                    onChange={(e) => setDescricao(e.target.value)}
+                    rows={4}
+                    maxLength={500}
+                  />
+                  <p className="text-xs text-gray-400 text-right">{descricao.length}/500 caracteres</p>
                 </div>
 
                 <div className="space-y-2">
@@ -534,10 +605,10 @@ export default function Perfil() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4 text-gray-500" /> Fotos dos Serviços
+                        <ImageIcon className="w-4 h-4 text-gray-500" /> Catálogo de Fotos
                       </h3>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Mostre seu trabalho para novos clientes
+                        {fotosTrabalhos.length}/{MAX_FOTOS} fotos — mostre seu trabalho para novos clientes
                       </p>
                     </div>
                     <Button
@@ -545,7 +616,7 @@ export default function Perfil() {
                       variant="outline"
                       size="sm"
                       onClick={() => trabalhoInputRef.current?.click()}
-                      disabled={isUploadingTrabalho}
+                      disabled={isUploadingTrabalho || fotosTrabalhos.length >= MAX_FOTOS}
                     >
                       {isUploadingTrabalho
                         ? <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -569,74 +640,42 @@ export default function Perfil() {
                       className="w-full h-36 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors"
                     >
                       <ImageIcon className="w-8 h-8 mb-2" />
-                      <span className="text-sm">Clique para adicionar fotos</span>
+                      <span className="text-sm">Clique para adicionar fotos do catálogo</span>
                     </button>
                   ) : (
-                    <div className="relative">
-                      {/* Carrossel */}
-                      <div className="overflow-hidden rounded-xl border border-gray-100">
-                        <div
-                          className="flex transition-transform duration-300"
-                          style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {fotosTrabalhos.map((url, i) => (
+                        <div key={i} className="relative group rounded-xl overflow-hidden border border-gray-100 aspect-square">
+                          <img
+                            src={url}
+                            alt={`Serviço ${i + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTrabalho(i)}
+                            className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <div className="absolute bottom-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            {i + 1}
+                          </div>
+                        </div>
+                      ))}
+                      {fotosTrabalhos.length < MAX_FOTOS && (
+                        <button
+                          type="button"
+                          onClick={() => trabalhoInputRef.current?.click()}
+                          disabled={isUploadingTrabalho}
+                          className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors"
                         >
-                          {fotosTrabalhos.map((url, i) => (
-                            <div key={i} className="min-w-full relative">
-                              <img
-                                src={url}
-                                alt={`Serviço ${i + 1}`}
-                                className="w-full h-52 object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveTrabalho(i)}
-                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-colors"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
-                                {i + 1} / {fotosTrabalhos.length}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Navegação */}
-                      {fotosTrabalhos.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setCarouselIndex(i => Math.max(0, i - 1))}
-                            disabled={carouselIndex === 0}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md disabled:opacity-30 transition-opacity"
-                          >
-                            <ChevronLeft className="w-5 h-5 text-gray-700" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCarouselIndex(i => Math.min(fotosTrabalhos.length - 1, i + 1))}
-                            disabled={carouselIndex === fotosTrabalhos.length - 1}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md disabled:opacity-30 transition-opacity"
-                          >
-                            <ChevronRight className="w-5 h-5 text-gray-700" />
-                          </button>
-                        </>
-                      )}
-
-                      {/* Dots */}
-                      {fotosTrabalhos.length > 1 && (
-                        <div className="flex justify-center gap-1.5 mt-2">
-                          {fotosTrabalhos.map((_, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => setCarouselIndex(i)}
-                              className={`w-2 h-2 rounded-full transition-colors ${
-                                i === carouselIndex ? 'bg-blue-600' : 'bg-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
+                          {isUploadingTrabalho
+                            ? <Loader2 className="w-6 h-6 animate-spin" />
+                            : <Plus className="w-6 h-6" />
+                          }
+                          <span className="text-xs mt-1">Adicionar</span>
+                        </button>
                       )}
                     </div>
                   )}
