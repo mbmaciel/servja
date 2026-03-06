@@ -1,6 +1,7 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Loader2, LogIn, MapPin, UserPlus, X, ShieldCheck } from 'lucide-react';
+import { Camera, Loader2, LogIn, MapPin, UserPlus, X, ShieldCheck, Tag, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,18 @@ export default function Login() {
   const [consentFotos, setConsentFotos] = useState(false);
   const fotoInputRef = useRef(null);
   const fotosTrabalhoInputRef = useRef(null);
+
+  // Prestador registration extras
+  const [categorias, setCategorias] = useState([]);
+  const [categoriaPrincipal, setCategoriaPrincipal] = useState('');
+  const [especialidades, setEspecialidades] = useState([]); // [{id, nome}]
+  const [descricao, setDescricao] = useState('');
+
+  useEffect(() => {
+    base44.entities.Categoria.filter({ ativo: true })
+      .then(setCategorias)
+      .catch(() => {});
+  }, []);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -187,6 +200,11 @@ export default function Login() {
       return;
     }
 
+    if (registerTab === 'prestador' && !categoriaPrincipal) {
+      toast.error('Selecione a categoria principal do seu serviço.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -245,6 +263,23 @@ export default function Login() {
           } catch {
             // Não-fatal
           }
+        }
+      }
+
+      // Salva categoria, especialidades e descrição do prestador
+      if (registerTab === 'prestador') {
+        const categoriaSel = categorias.find(c => c.id === categoriaPrincipal);
+        try {
+          await base44.profile.savePrestador({
+            prestador: {
+              categoria_id: categoriaPrincipal,
+              categoria_nome: categoriaSel?.nome || '',
+              especialidades,
+              descricao: descricao.trim() || null,
+            },
+          });
+        } catch {
+          // Não-fatal
         }
       }
 
@@ -492,6 +527,74 @@ export default function Login() {
                         className="hidden"
                         onChange={handleFotoChange}
                       />
+                    </div>
+
+                    {/* Categoria principal */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1.5">
+                        <Tag className="w-4 h-4 text-gray-500" /> Categoria principal *
+                      </Label>
+                      <Select value={categoriaPrincipal} onValueChange={setCategoriaPrincipal}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a categoria do seu serviço" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categorias.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Especialidades adicionais */}
+                    {categorias.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5">
+                          <Tag className="w-4 h-4 text-gray-500" /> Especialidades adicionais (opcional)
+                        </Label>
+                        <p className="text-xs text-gray-400">Marque todas as funções que você realiza</p>
+                        <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                          {categorias.map((c) => {
+                            const checked = especialidades.some(e => e.id === c.id);
+                            return (
+                              <label
+                                key={c.id}
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer text-sm transition-colors
+                                  ${checked ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300 text-gray-700'}`}
+                              >
+                                <input type="checkbox" className="hidden" checked={checked}
+                                  onChange={() => setEspecialidades(prev =>
+                                    checked ? prev.filter(e => e.id !== c.id) : [...prev, { id: c.id, nome: c.nome }]
+                                  )}
+                                />
+                                <span className={`w-4 h-4 flex-shrink-0 rounded border-2 flex items-center justify-center
+                                  ${checked ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+                                  {checked && <span className="text-white text-xs font-bold leading-none">✓</span>}
+                                </span>
+                                {c.nome}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {especialidades.length > 0 && (
+                          <p className="text-xs text-blue-600">{especialidades.length} selecionada(s)</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Descrição */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-gray-500" /> Sobre meu trabalho (opcional)
+                      </Label>
+                      <Textarea
+                        placeholder="Descreva sua experiência e os serviços que você realiza..."
+                        value={descricao}
+                        onChange={(e) => setDescricao(e.target.value)}
+                        rows={3}
+                        maxLength={500}
+                      />
+                      <p className="text-xs text-gray-400 text-right">{descricao.length}/500</p>
                     </div>
 
                     {/* Fotos do serviço */}
