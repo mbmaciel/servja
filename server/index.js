@@ -12,7 +12,7 @@ import { router as atividadesRouter, initAtividadesTable } from './routes/ativid
 import { router as avaliacoesRouter, initAvaliacoesTable } from './routes/avaliacoes.js';
 import { serializeRow, serializeRows, toPublicUser } from './serializers.js';
 import { geocodeByCep } from './services/geocodeService.js';
-import { sendWelcomeEmail, notifyAdmins, sendAvaliacaoEmail } from './services/emailService.js';
+import { sendWelcomeEmail, notifyAdmins, sendAvaliacaoEmail, sendNewSolicitacaoEmail } from './services/emailService.js';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -1682,7 +1682,13 @@ app.post(
     );
 
     const [rows] = await pool.query('SELECT * FROM solicitacoes WHERE id = ? LIMIT 1', [id]);
-    res.status(201).json({ item: serializeRow(rows[0]) });
+    const solicitacao = rows[0];
+
+    setImmediate(() =>
+      sendNewSolicitacaoEmail(pool, solicitacao).catch(console.error)
+    );
+
+    res.status(201).json({ item: serializeRow(solicitacao) });
   })
 );
 

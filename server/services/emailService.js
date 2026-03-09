@@ -24,8 +24,40 @@ const createTransporter = () =>
     },
   });
 
+// ─── Bloco HTML reutilizável ──────────────────────────────────────────────────
+const headerHtml = (appUrl) => {
+  const logoUrl = `${appUrl}/uploads/logo-sevja.jpg`;
+  return `
+    <div style="background:linear-gradient(135deg,#3b82f6 0%,#22c55e 100%);border-radius:12px 12px 0 0;padding:28px 20px;text-align:center;">
+      <img src="${logoUrl}" alt="SeviJa" width="80" height="80"
+           style="border-radius:18px;display:block;margin:0 auto 14px;" />
+      <h1 style="margin:0;color:#fff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">SeviJa</h1>
+      <p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px;">Serviços na sua região</p>
+    </div>`;
+};
+
+const footerHtml = (appUrl) => `
+  <div style="background:#f1f5f9;border-radius:0 0 12px 12px;padding:14px 28px;text-align:center;">
+    <p style="margin:0;color:#94a3b8;font-size:12px;">
+      © 2026 SeviJa &nbsp;·&nbsp;
+      <a href="${appUrl}" style="color:#3b82f6;text-decoration:none;">${appUrl.replace('https://', '')}</a>
+    </p>
+  </div>`;
+
+const wrapHtml = (appUrl, body) => `
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
+    ${headerHtml(appUrl)}
+    <div style="padding:28px;">
+      ${body}
+    </div>
+    ${footerHtml(appUrl)}
+  </div>`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Envia email de boas-vindas ao novo usuário com suas credenciais.
+ * Para prestadores envia um email específico com próximos passos.
  */
 export async function sendWelcomeEmail(user, plainPassword) {
   if (!isConfigured()) {
@@ -34,79 +66,124 @@ export async function sendWelcomeEmail(user, plainPassword) {
   }
 
   const appUrl = process.env.APP_URL || 'https://sevija.com';
-  const logoUrl = `${appUrl}/uploads/logo-sevja.jpg`;
-  const tipoLabel = user.tipo === 'prestador' ? 'Prestador de Serviços' : 'Cliente';
   const transporter = createTransporter();
 
-  await transporter.sendMail({
-    from: `"SeviJa" <${SMTP_FROM}>`,
-    to: user.email,
-    subject: `Bem-vindo ao SeviJa, ${user.full_name}!`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+  if (user.tipo === 'prestador') {
+    // ── Email personalizado para prestadores ──────────────────────────────────
+    const body = `
+      <h2 style="margin:0 0 6px;color:#1e293b;font-size:20px;">Olá, ${user.full_name}! 🎉</h2>
+      <p style="color:#475569;line-height:1.7;margin:0 0 20px;">
+        Seu cadastro como <strong>Prestador de Serviços</strong> no SeviJa foi realizado com sucesso!
+        Agora você faz parte da nossa rede de profissionais e já pode começar a receber solicitações de clientes da sua região.
+      </p>
 
-        <!-- Cabeçalho com logo -->
-        <div style="background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%); border-radius: 12px 12px 0 0; padding: 32px 20px; text-align: center;">
-          <img src="${logoUrl}" alt="SeviJa" width="90" height="90"
-               style="border-radius: 20px; display: block; margin: 0 auto 16px;" />
-          <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">SeviJa</h1>
-          <p style="margin: 6px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Serviços na sua região</p>
-        </div>
-
-        <!-- Corpo -->
-        <div style="padding: 32px 28px;">
-          <h2 style="margin: 0 0 8px; color: #1e293b; font-size: 20px;">Bem-vindo, ${user.full_name}!</h2>
-          <p style="margin: 0 0 20px; color: #475569; line-height: 1.6;">
-            Seu cadastro como <strong>${tipoLabel}</strong> foi realizado com sucesso.
-            Aqui estão suas credenciais de acesso:
-          </p>
-
-          <!-- Box credenciais -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 28px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; color: #64748b; font-size: 13px; width: 80px;">Email</td>
-                <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${user.email}</td>
-              </tr>
-              <tr style="border-top: 1px solid #e2e8f0;">
-                <td style="padding: 8px 0; color: #64748b; font-size: 13px;">Senha</td>
-                <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${plainPassword}</td>
-              </tr>
-            </table>
-          </div>
-
-          <p style="margin: 0 0 28px; color: #475569; line-height: 1.6;">
-            ${user.tipo === 'prestador'
-              ? 'Configure seu perfil profissional e comece a receber solicitações de clientes na sua região.'
-              : 'Encontre os melhores prestadores de serviços próximos a você com facilidade.'}
-          </p>
-
-          <!-- Botão acesso -->
-          <div style="text-align: center; margin-bottom: 32px;">
-            <a href="${appUrl}"
-               style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%);
-                      color: #ffffff; text-decoration: none; padding: 14px 36px;
-                      border-radius: 50px; font-size: 16px; font-weight: 700; letter-spacing: 0.3px;">
-              Acessar a plataforma
-            </a>
-          </div>
-
-          <p style="margin: 0; color: #94a3b8; font-size: 12px; text-align: center;">
-            Por segurança, recomendamos que você altere sua senha após o primeiro acesso.
-          </p>
-        </div>
-
-        <!-- Rodapé -->
-        <div style="background: #f1f5f9; border-radius: 0 0 12px 12px; padding: 16px 28px; text-align: center;">
-          <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-            © 2026 SeviJa &nbsp;·&nbsp;
-            <a href="${appUrl}" style="color: #3b82f6; text-decoration: none;">${appUrl.replace('https://', '')}</a>
-          </p>
-        </div>
-
+      <!-- Credenciais -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:24px;">
+        <p style="margin:0 0 10px;color:#64748b;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Seus dados de acesso</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:7px 0;color:#64748b;font-size:13px;width:70px;">Email</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">${user.email}</td>
+          </tr>
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;">Senha</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">${plainPassword}</td>
+          </tr>
+        </table>
       </div>
-    `,
-  });
+
+      <!-- Próximos passos -->
+      <p style="color:#1e293b;font-weight:600;font-size:15px;margin:0 0 12px;">📋 Próximos passos para se destacar:</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr>
+          <td style="padding:8px 0;vertical-align:top;width:32px;font-size:18px;">📷</td>
+          <td style="padding:8px 0;color:#475569;font-size:14px;line-height:1.5;">
+            <strong style="color:#1e293b;">Adicione sua foto de perfil</strong> — transmite confiança e aumenta as solicitações recebidas.
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #f1f5f9;">
+          <td style="padding:8px 0;vertical-align:top;font-size:18px;">🖼️</td>
+          <td style="padding:8px 0;color:#475569;font-size:14px;line-height:1.5;">
+            <strong style="color:#1e293b;">Publique fotos dos seus trabalhos</strong> — clientes escolhem profissionais que mostram resultados.
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #f1f5f9;">
+          <td style="padding:8px 0;vertical-align:top;font-size:18px;">✍️</td>
+          <td style="padding:8px 0;color:#475569;font-size:14px;line-height:1.5;">
+            <strong style="color:#1e293b;">Escreva uma descrição dos seus serviços</strong> — conte sua experiência e diferenciais.
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #f1f5f9;">
+          <td style="padding:8px 0;vertical-align:top;font-size:18px;">💰</td>
+          <td style="padding:8px 0;color:#475569;font-size:14px;line-height:1.5;">
+            <strong style="color:#1e293b;">Defina seu preço base</strong> — ajuda os clientes a encontrarem você na busca.
+          </td>
+        </tr>
+      </table>
+
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${appUrl}/perfil"
+           style="display:inline-block;background:linear-gradient(135deg,#3b82f6 0%,#22c55e 100%);
+                  color:#fff;text-decoration:none;padding:14px 36px;
+                  border-radius:50px;font-size:15px;font-weight:700;">
+          Completar meu perfil agora
+        </a>
+      </div>
+
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0;">
+        Qualquer dúvida, responda este email ou acesse ${appUrl.replace('https://', '')}
+      </p>`;
+
+    await transporter.sendMail({
+      from: `"SeviJa" <${SMTP_FROM}>`,
+      to: user.email,
+      subject: `Bem-vindo ao SeviJa, ${user.full_name}! Seu perfil aguarda você 🚀`,
+      html: wrapHtml(appUrl, body),
+    });
+
+  } else {
+    // ── Email genérico para clientes ──────────────────────────────────────────
+    const body = `
+      <h2 style="margin:0 0 6px;color:#1e293b;font-size:20px;">Bem-vindo, ${user.full_name}!</h2>
+      <p style="color:#475569;line-height:1.7;margin:0 0 20px;">
+        Sua conta de <strong>Cliente</strong> foi criada com sucesso.
+        Encontre os melhores profissionais próximos a você com facilidade.
+      </p>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:24px;">
+        <p style="margin:0 0 10px;color:#64748b;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Seus dados de acesso</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:7px 0;color:#64748b;font-size:13px;width:70px;">Email</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">${user.email}</td>
+          </tr>
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;">Senha</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">${plainPassword}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${appUrl}"
+           style="display:inline-block;background:linear-gradient(135deg,#3b82f6 0%,#22c55e 100%);
+                  color:#fff;text-decoration:none;padding:14px 36px;
+                  border-radius:50px;font-size:15px;font-weight:700;">
+          Buscar prestadores
+        </a>
+      </div>
+
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0;">
+        Por segurança, recomendamos alterar sua senha após o primeiro acesso.
+      </p>`;
+
+    await transporter.sendMail({
+      from: `"SeviJa" <${SMTP_FROM}>`,
+      to: user.email,
+      subject: `Bem-vindo ao SeviJa, ${user.full_name}!`,
+      html: wrapHtml(appUrl, body),
+    });
+  }
 }
 
 /**
@@ -157,6 +234,84 @@ export async function sendAvaliacaoEmail({ cliente_email, cliente_nome, prestado
     });
   } catch (err) {
     console.error('[emailService] Erro ao enviar email de avaliação:', err.message);
+  }
+}
+
+/**
+ * Notifica todos os admins quando uma nova solicitação é criada.
+ */
+export async function sendNewSolicitacaoEmail(pool, solicitacao) {
+  if (!isConfigured()) {
+    console.warn('[emailService] SMTP não configurado. Notificação de solicitação ignorada.');
+    return;
+  }
+
+  try {
+    const [adminRows] = await pool.query(
+      "SELECT email, full_name FROM users WHERE tipo = 'admin' AND email IS NOT NULL AND ativo = TRUE"
+    );
+
+    if (!adminRows.length) return;
+
+    const transporter = createTransporter();
+    const adminEmails = adminRows.map((a) => a.email);
+    const appUrl = process.env.APP_URL || 'https://sevija.com';
+
+    const body = `
+      <h2 style="margin:0 0 6px;color:#1e293b;font-size:20px;">Nova solicitação recebida!</h2>
+      <p style="color:#475569;line-height:1.7;margin:0 0 20px;">
+        Um cliente acabou de solicitar um serviço na plataforma.
+      </p>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:24px;">
+        <p style="margin:0 0 10px;color:#64748b;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Detalhes da solicitação</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:7px 0;color:#64748b;font-size:13px;width:110px;">Cliente</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">${solicitacao.cliente_nome || '-'}</td>
+          </tr>
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;">Email</td>
+            <td style="padding:7px 0;color:#1e293b;">${solicitacao.cliente_email || '-'}</td>
+          </tr>
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;">Prestador</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">${solicitacao.prestador_nome || '-'}</td>
+          </tr>
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;">Categoria</td>
+            <td style="padding:7px 0;color:#1e293b;">${solicitacao.categoria_nome || '-'}</td>
+          </tr>
+          ${solicitacao.descricao ? `
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;vertical-align:top;">Descrição</td>
+            <td style="padding:7px 0;color:#1e293b;">${solicitacao.descricao}</td>
+          </tr>` : ''}
+          ${solicitacao.preco_proposto ? `
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:7px 0;color:#64748b;font-size:13px;">Oferta</td>
+            <td style="padding:7px 0;color:#1e293b;font-weight:600;">R$ ${Number(solicitacao.preco_proposto).toFixed(2)}</td>
+          </tr>` : ''}
+        </table>
+      </div>
+
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${appUrl}/admin"
+           style="display:inline-block;background:linear-gradient(135deg,#3b82f6 0%,#22c55e 100%);
+                  color:#fff;text-decoration:none;padding:14px 36px;
+                  border-radius:50px;font-size:15px;font-weight:700;">
+          Ver no painel admin
+        </a>
+      </div>`;
+
+    await transporter.sendMail({
+      from: `"SeviJa" <${SMTP_FROM}>`,
+      to: adminEmails,
+      subject: `[SeviJa] Nova solicitação: ${solicitacao.cliente_nome || 'Cliente'} → ${solicitacao.prestador_nome || 'Prestador'}`,
+      html: wrapHtml(appUrl, body),
+    });
+  } catch (err) {
+    console.error('[emailService] Erro ao notificar admins sobre solicitação:', err.message);
   }
 }
 

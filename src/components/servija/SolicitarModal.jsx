@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { getInitials, getPrecoInicial, getFotosTrabalhos, buildWhatsappUrl } from '@/utils/prestadorUtils';
 
-const WHATSAPP_MSG = 'Quero mais informações. Entrei em contato através do site ServeJa.com';
+const WHATSAPP_MSG = 'Olá! Vim pelo site sevija.com, gostaria de saber mais sobre o seu serviço.';
 
 export default function SolicitarModal({ prestador, open, onOpenChange, user }) {
   const [descricao, setDescricao] = useState('');
