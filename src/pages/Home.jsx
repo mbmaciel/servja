@@ -52,12 +52,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.16),_transparent_28%)]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 to-transparent" />
+      <section
+        className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800"
+        style={{
+          backgroundImage: [
+            'radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 35%)',
+            'radial-gradient(circle at bottom right, rgba(251,191,36,0.16), transparent 28%)',
+            `url(${homeHeroImage})`,
+          ].join(', '),
+          backgroundPosition: 'left top, right bottom, right center',
+          backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
+          backgroundSize: 'auto, auto, min(52vw, 860px)',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/75 via-blue-800/60 to-blue-700/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/55 to-transparent" />
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 md:py-24 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:py-28">
-          <div className="max-w-2xl">
+        <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 lg:py-28">
+          <div className="max-w-2xl xl:max-w-3xl">
             <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
               Encontre o profissional
               <span className="text-yellow-400"> perfeito</span> para você
@@ -98,17 +110,6 @@ export default function Home() {
                 <p className="text-3xl font-bold text-white md:text-4xl">5.0</p>
                 <p className="text-sm text-blue-200">Avaliação média</p>
               </div>
-            </div>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-2xl">
-            <div className="absolute -inset-4 rounded-[2rem] bg-white/10 blur-2xl" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-2 shadow-[0_30px_80px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-              <img
-                src={homeHeroImage}
-                alt="Tela do ServiJa exibindo prestadores em destaque"
-                className="h-auto w-full rounded-[1.5rem] object-cover"
-              />
             </div>
           </div>
         </div>
