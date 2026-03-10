@@ -1,6 +1,5 @@
 services:
-
-  # ─── Banco de dados MySQL ────────────────────────────────────────────────────
+  # MySQL database
   mysql:
     image: mysql:8.0
     container_name: servja_db
@@ -9,7 +8,7 @@ services:
       MYSQL_ROOT_PASSWORD: root_servja_local
       MYSQL_DATABASE: servija
       MYSQL_USER: servija
-      MYSQL_PASSWORD: Fe230599@
+      MYSQL_PASSWORD: servija_local_dev_password
     ports:
       - "3307:3306"
     volumes:
@@ -21,7 +20,7 @@ services:
       retries: 15
       start_period: 20s
 
-  # ─── Backend Express (API) ───────────────────────────────────────────────────
+  # Express backend (API)
   api:
     image: node:22-alpine
     container_name: servja_api
@@ -39,7 +38,7 @@ services:
       - .env.local
     command: sh -c "npm install --prefer-offline --silent && node --watch server/index.js"
 
-  # ─── Frontend Vite (dev server) ──────────────────────────────────────────────
+  # Vite frontend (dev server)
   frontend:
     image: node:22-alpine
     container_name: servja_frontend
@@ -56,7 +55,7 @@ services:
       - VITE_API_PROXY_TARGET=http://api:3001
     command: sh -c "npm install --prefer-offline --silent && npx vite --host 0.0.0.0"
 
-# ─── Volumes persistentes ─────────────────────────────────────────────────────
+# Persistent volumes
 volumes:
   servja_mysql_data:
     driver: local

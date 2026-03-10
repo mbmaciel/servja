@@ -1,6 +1,8 @@
-#env
+# env
 .env
 .env.*
+.env.local
+.env.local.*
 
 # Logs
 logs
@@ -27,4 +29,7 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
+# Sensitive local-only files
+.claude/
+ecosystem.config.js
+*.sql
