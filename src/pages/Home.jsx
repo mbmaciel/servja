@@ -54,22 +54,22 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.18),_transparent_30%)]" />
-        <div className="absolute inset-y-0 right-0 hidden w-[52%] overflow-hidden lg:block">
-          <div className="absolute -left-6 top-1/2 z-10 h-80 w-80 -translate-y-1/2 rounded-full bg-cyan-300/25 blur-3xl" />
+        <div className="absolute inset-y-0 right-0 hidden w-[48%] items-center justify-end overflow-hidden lg:flex">
+          <div className="absolute -left-10 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-cyan-300/20 blur-3xl" />
+          <div className="absolute inset-y-0 left-0 w-44 bg-gradient-to-r from-blue-700 via-blue-700/35 to-transparent" />
           <img
             src={homeHeroImage}
             alt=""
             aria-hidden="true"
-            className="absolute right-[-3%] top-1/2 z-0 h-[92%] w-auto max-w-none -translate-y-1/2 object-contain opacity-95 drop-shadow-[0_24px_80px_rgba(15,23,42,0.30)]"
+            className="relative right-[-4%] z-10 w-[780px] max-w-none object-contain opacity-100 drop-shadow-[0_28px_90px_rgba(15,23,42,0.28)]"
           />
-          <div className="absolute inset-y-0 left-0 z-20 w-52 bg-gradient-to-r from-blue-700 via-blue-700/55 to-transparent" />
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-blue-900/18 via-transparent to-white/8" />
+          <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-blue-700/20 to-transparent" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/84 via-blue-800/48 to-blue-700/8" />
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/42 via-transparent to-white/6" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/78 via-blue-800/38 to-blue-700/0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/32 via-transparent to-white/6" />
 
         <div className="relative z-30 mx-auto max-w-7xl px-4 py-16 md:py-24 lg:min-h-[620px] lg:py-28">
-          <div className="max-w-2xl lg:max-w-[46rem] xl:max-w-[50rem]">
+          <div className="max-w-2xl lg:max-w-[42rem] xl:max-w-[46rem]">
             <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
               Encontre o profissional
               <span className="text-yellow-400"> perfeito</span> para você
