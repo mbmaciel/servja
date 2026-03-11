@@ -52,24 +52,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <section
-        className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800"
-        style={{
-          backgroundImage: [
-            'radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 35%)',
-            'radial-gradient(circle at bottom right, rgba(251,191,36,0.16), transparent 28%)',
-            `url(${homeHeroImage})`,
-          ].join(', '),
-          backgroundPosition: 'left top, right bottom, right center',
-          backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
-          backgroundSize: 'auto, auto, min(52vw, 860px)',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/75 via-blue-800/60 to-blue-700/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/55 to-transparent" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.18),_transparent_30%)]" />
+        <div className="absolute inset-y-0 right-0 hidden w-[56%] lg:block">
+          <div
+            className="absolute inset-y-8 right-[-6%] w-full bg-contain bg-right bg-no-repeat opacity-95"
+            style={{ backgroundImage: `url(${homeHeroImage})` }}
+          />
+          <div className="absolute inset-y-0 left-0 w-44 bg-gradient-to-r from-blue-700 via-blue-700/75 to-transparent" />
+          <div className="absolute -left-16 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-blue-300/20 blur-3xl" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/88 via-blue-800/66 to-blue-700/28" />
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/45 via-transparent to-white/6" />
 
-        <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 lg:py-28">
-          <div className="max-w-2xl xl:max-w-3xl">
+        <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 lg:min-h-[620px] lg:py-28">
+          <div className="max-w-2xl lg:max-w-[46rem] xl:max-w-[50rem]">
             <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
               Encontre o profissional
               <span className="text-yellow-400"> perfeito</span> para você
@@ -79,7 +76,7 @@ export default function Home() {
               Rápido, seguro e com preços transparentes.
             </p>
 
-            <div className="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-2xl sm:flex-row">
+            <div className="flex max-w-4xl flex-col gap-2 rounded-2xl bg-white/96 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/45 backdrop-blur sm:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -97,7 +94,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="mt-12 grid grid-cols-3 gap-6">
+            <div className="mt-12 grid max-w-2xl grid-cols-3 gap-6">
               <div>
                 <p className="text-3xl font-bold text-white md:text-4xl">{prestadores.length}+</p>
                 <p className="text-sm text-blue-200">Profissionais</p>
