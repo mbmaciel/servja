@@ -54,65 +54,67 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.14),_transparent_28%)]" />
-        <div className="absolute inset-y-0 right-0 hidden w-[52%] overflow-hidden lg:block">
-          <div className="absolute inset-y-0 left-0 w-36 bg-gradient-to-r from-blue-700 via-blue-700/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-blue-500/8 to-transparent" />
-          <div className="absolute -left-10 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-sky-300/18 blur-3xl" />
-          <img
-            src={homeHeroImage}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-y-0 right-0 h-full w-full object-cover object-left"
-          />
-          <div className="absolute inset-y-0 left-0 w-48 bg-gradient-to-r from-blue-700 via-blue-700/58 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-l from-blue-500/12 via-transparent to-blue-800/10" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/78 via-blue-800/38 to-blue-700/12" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/78 via-blue-800/34 to-blue-700/12" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_58%_50%,_rgba(59,130,246,0.16),_transparent_16%),radial-gradient(circle_at_72%_48%,_rgba(255,255,255,0.06),_transparent_18%)]" />
         <div className="absolute inset-0 bg-gradient-to-t from-blue-950/32 via-transparent to-white/6" />
 
         <div className="relative z-30 mx-auto max-w-7xl px-4 py-16 md:py-24 lg:min-h-[620px] lg:py-28">
-          <div className="max-w-2xl lg:max-w-[42rem] xl:max-w-[46rem]">
-            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
-              Encontre o profissional
-              <span className="text-yellow-400"> perfeito</span> para você
-            </h1>
-            <p className="mb-8 text-lg text-blue-100 md:text-xl">
-              Conectamos você aos melhores prestadores de serviços da sua região.
-              Rápido, seguro e com preços transparentes.
-            </p>
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:gap-8">
+            <div className="max-w-2xl lg:max-w-[42rem] xl:max-w-[46rem]">
+              <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+                Encontre o profissional
+                <span className="text-yellow-400"> perfeito</span> para você
+              </h1>
+              <p className="mb-8 text-lg text-blue-100 md:text-xl">
+                Conectamos você aos melhores prestadores de serviços da sua região.
+                Rápido, seguro e com preços transparentes.
+              </p>
 
-            <div className="flex max-w-4xl flex-col gap-2 rounded-2xl bg-white/96 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/45 backdrop-blur sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="O que você precisa?"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="h-14 border-0 bg-transparent pl-12 text-lg focus-visible:ring-0"
-                />
+              <div className="flex max-w-4xl flex-col gap-2 rounded-2xl bg-white/96 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/45 backdrop-blur sm:flex-row">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="O que você precisa?"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    className="h-14 border-0 bg-transparent pl-12 text-lg focus-visible:ring-0"
+                  />
+                </div>
+                <Link to={createPageUrl('Buscar') + `?q=${busca}`}>
+                  <Button className="h-14 w-full bg-blue-600 px-8 text-lg hover:bg-blue-700 sm:w-auto">
+                    <Search className="mr-2 h-5 w-5" />
+                    Buscar
+                  </Button>
+                </Link>
               </div>
-              <Link to={createPageUrl('Buscar') + `?q=${busca}`}>
-                <Button className="h-14 w-full bg-blue-600 px-8 text-lg hover:bg-blue-700 sm:w-auto">
-                  <Search className="mr-2 h-5 w-5" />
-                  Buscar
-                </Button>
-              </Link>
+
+              <div className="mt-12 grid max-w-2xl grid-cols-3 gap-6">
+                <div>
+                  <p className="text-3xl font-bold text-white md:text-4xl">{prestadores.length}+</p>
+                  <p className="text-sm text-blue-200">Profissionais</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-white md:text-4xl">{categorias.length}</p>
+                  <p className="text-sm text-blue-200">Categorias</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-white md:text-4xl">5.0</p>
+                  <p className="text-sm text-blue-200">Avaliação média</p>
+                </div>
+              </div>
             </div>
 
-            <div className="mt-12 grid max-w-2xl grid-cols-3 gap-6">
-              <div>
-                <p className="text-3xl font-bold text-white md:text-4xl">{prestadores.length}+</p>
-                <p className="text-sm text-blue-200">Profissionais</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-white md:text-4xl">{categorias.length}</p>
-                <p className="text-sm text-blue-200">Categorias</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-white md:text-4xl">5.0</p>
-                <p className="text-sm text-blue-200">Avaliação média</p>
-              </div>
+            <div className="relative hidden min-h-[430px] lg:block">
+              <div className="absolute inset-y-10 -left-8 w-24 rounded-full bg-sky-300/20 blur-3xl" />
+              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/10 via-white/4 to-transparent" />
+              <img
+                src={homeHeroImage}
+                alt=""
+                aria-hidden="true"
+                className="relative z-10 ml-auto h-auto w-full max-w-[760px] object-contain drop-shadow-[0_24px_70px_rgba(8,47,73,0.24)]"
+              />
+              <div className="absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-blue-700 via-blue-700/55 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-blue-700/35 to-transparent" />
             </div>
           </div>
         </div>
