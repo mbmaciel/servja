@@ -104,17 +104,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative hidden min-h-[430px] lg:block">
-              <div className="absolute inset-y-10 -left-8 w-24 rounded-full bg-sky-300/20 blur-3xl" />
-              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/10 via-white/4 to-transparent" />
+            <div className="relative hidden min-h-[430px] overflow-hidden lg:block">
+              <div className="absolute left-[4%] top-1/2 z-0 h-72 w-24 -translate-y-1/2 rounded-full bg-sky-300/18 blur-3xl" />
               <img
                 src={homeHeroImage}
                 alt=""
                 aria-hidden="true"
-                className="relative z-10 ml-auto h-auto w-full max-w-[760px] object-contain drop-shadow-[0_24px_70px_rgba(8,47,73,0.24)]"
+                className="absolute right-[-14%] top-1/2 z-10 w-[860px] max-w-none -translate-y-1/2 object-contain opacity-95 drop-shadow-[0_26px_70px_rgba(8,47,73,0.18)]"
               />
-              <div className="absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-blue-700 via-blue-700/55 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-blue-700/35 to-transparent" />
+              <div className="absolute inset-y-0 left-0 z-20 w-40 bg-gradient-to-r from-blue-700 via-blue-700/92 via-blue-700/62 to-transparent" />
+              <div className="absolute inset-y-0 right-0 z-20 w-20 bg-gradient-to-l from-blue-700 via-blue-700/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-t from-blue-700 via-blue-700/45 to-transparent" />
+              <div className="absolute inset-x-0 top-0 z-20 h-16 bg-gradient-to-b from-blue-700/22 to-transparent" />
             </div>
           </div>
         </div>
