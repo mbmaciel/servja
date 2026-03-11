@@ -53,22 +53,22 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.18),_transparent_30%)]" />
-        <div className="absolute inset-y-0 right-0 hidden w-[50%] items-center justify-end overflow-hidden lg:flex">
-          <div className="absolute -left-12 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-cyan-300/25 blur-3xl" />
-          <div className="absolute inset-y-0 left-0 w-56 bg-gradient-to-r from-blue-700 via-blue-700/55 via-blue-600/25 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.14),_transparent_28%)]" />
+        <div className="absolute inset-y-0 right-0 hidden w-[52%] overflow-hidden lg:block">
+          <div className="absolute inset-y-0 left-0 w-36 bg-gradient-to-r from-blue-700 via-blue-700/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-blue-500/8 to-transparent" />
+          <div className="absolute -left-10 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-sky-300/18 blur-3xl" />
           <img
             src={homeHeroImage}
             alt=""
             aria-hidden="true"
-            className="relative right-[-3%] z-10 w-[840px] max-w-none object-contain opacity-100 mix-blend-screen drop-shadow-[0_28px_90px_rgba(15,23,42,0.22)]"
+            className="absolute inset-y-0 right-0 h-full w-full object-cover object-left"
           />
-          <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-blue-700/70 via-blue-700/20 to-transparent blur-xl" />
-          <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-blue-700/25 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/6 to-blue-900/8" />
+          <div className="absolute inset-y-0 left-0 w-48 bg-gradient-to-r from-blue-700 via-blue-700/58 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-l from-blue-500/12 via-transparent to-blue-800/10" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/78 via-blue-800/34 to-blue-700/6" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_58%_50%,_rgba(59,130,246,0.20),_transparent_16%),radial-gradient(circle_at_72%_48%,_rgba(255,255,255,0.08),_transparent_18%)]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/78 via-blue-800/38 to-blue-700/12" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_58%_50%,_rgba(59,130,246,0.16),_transparent_16%),radial-gradient(circle_at_72%_48%,_rgba(255,255,255,0.06),_transparent_18%)]" />
         <div className="absolute inset-0 bg-gradient-to-t from-blue-950/32 via-transparent to-white/6" />
 
         <div className="relative z-30 mx-auto max-w-7xl px-4 py-16 md:py-24 lg:min-h-[620px] lg:py-28">
