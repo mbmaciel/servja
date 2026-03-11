@@ -57,7 +57,7 @@ export default function Home() {
           src={homeHeroImage}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover object-[70%_center] opacity-[0.98]"
+          className="absolute inset-0 h-full w-full object-cover object-[66%_68%] opacity-[0.98] md:object-[68%_70%] lg:object-[70%_74%]"
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_32%),radial-gradient(circle_at_bottom_left,_rgba(96,165,250,0.20),_transparent_28%)]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#2658db] via-[#2658db]/95 via-[#2658db]/82 to-[#2658db]/44" />
