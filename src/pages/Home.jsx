@@ -54,15 +54,17 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.18),_transparent_30%)]" />
-        <div className="absolute inset-y-0 right-0 hidden w-[56%] lg:block">
-          <div
-            className="absolute inset-y-8 right-[-6%] w-full bg-contain bg-right bg-no-repeat opacity-95"
-            style={{ backgroundImage: `url(${homeHeroImage})` }}
+        <div className="absolute inset-y-0 right-0 hidden w-[54%] lg:block">
+          <div className="absolute inset-y-0 left-0 w-44 bg-gradient-to-r from-blue-700 via-blue-700/70 to-transparent" />
+          <div className="absolute -left-8 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-cyan-300/20 blur-3xl" />
+          <img
+            src={homeHeroImage}
+            alt=""
+            aria-hidden="true"
+            className="absolute right-[-4%] top-1/2 h-[88%] w-auto max-w-none -translate-y-1/2 object-contain opacity-100 drop-shadow-[0_20px_60px_rgba(15,23,42,0.28)]"
           />
-          <div className="absolute inset-y-0 left-0 w-44 bg-gradient-to-r from-blue-700 via-blue-700/75 to-transparent" />
-          <div className="absolute -left-16 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-blue-300/20 blur-3xl" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/88 via-blue-800/66 to-blue-700/28" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/86 via-blue-800/58 to-blue-700/18" />
         <div className="absolute inset-0 bg-gradient-to-t from-blue-950/45 via-transparent to-white/6" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 lg:min-h-[620px] lg:py-28">
