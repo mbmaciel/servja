@@ -52,72 +52,60 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.12),_transparent_28%)]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/72 via-blue-800/24 to-blue-700/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_56%_50%,_rgba(59,130,246,0.24),_transparent_18%),radial-gradient(circle_at_73%_38%,_rgba(255,255,255,0.08),_transparent_18%)]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/24 via-transparent to-white/6" />
+      <section className="relative overflow-hidden bg-[#2658db]">
+        <img
+          src={homeHeroImage}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-[70%_center] opacity-[0.98]"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_32%),radial-gradient(circle_at_bottom_left,_rgba(96,165,250,0.20),_transparent_28%)]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#2658db] via-[#2658db]/95 via-[#2658db]/82 to-[#2658db]/44" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#2658db]/28 via-transparent to-[#2658db]/10" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_34%_44%,_rgba(37,99,235,0.28),_transparent_18%),radial-gradient(circle_at_74%_42%,_rgba(255,255,255,0.07),_transparent_16%)]" />
 
         <div className="relative z-30 mx-auto max-w-7xl px-4 py-16 md:py-24 lg:min-h-[620px] lg:py-28">
-          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:gap-8">
-            <div className="max-w-2xl lg:max-w-[42rem] xl:max-w-[46rem]">
-              <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
-                Encontre o profissional
-                <span className="text-yellow-400"> perfeito</span> para você
-              </h1>
-              <p className="mb-8 text-lg text-blue-100 md:text-xl">
-                Conectamos você aos melhores prestadores de serviços da sua região.
-                Rápido, seguro e com preços transparentes.
-              </p>
+          <div className="max-w-2xl lg:max-w-[48rem]">
+            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+              Encontre o profissional
+              <span className="text-yellow-400"> perfeito</span> para você
+            </h1>
+            <p className="mb-8 text-lg text-blue-100 md:text-xl">
+              Conectamos você aos melhores prestadores de serviços da sua região.
+              Rápido, seguro e com preços transparentes.
+            </p>
 
-              <div className="flex max-w-4xl flex-col gap-2 rounded-2xl bg-white/96 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/45 backdrop-blur sm:flex-row">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    placeholder="O que você precisa?"
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    className="h-14 border-0 bg-transparent pl-12 text-lg focus-visible:ring-0"
-                  />
-                </div>
-                <Link to={createPageUrl('Buscar') + `?q=${busca}`}>
-                  <Button className="h-14 w-full bg-blue-600 px-8 text-lg hover:bg-blue-700 sm:w-auto">
-                    <Search className="mr-2 h-5 w-5" />
-                    Buscar
-                  </Button>
-                </Link>
+            <div className="flex max-w-4xl flex-col gap-2 rounded-2xl bg-white/96 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/45 backdrop-blur sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="O que você precisa?"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="h-14 border-0 bg-transparent pl-12 text-lg focus-visible:ring-0"
+                />
               </div>
-
-              <div className="mt-12 grid max-w-2xl grid-cols-3 gap-6">
-                <div>
-                  <p className="text-3xl font-bold text-white md:text-4xl">{prestadores.length}+</p>
-                  <p className="text-sm text-blue-200">Profissionais</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-white md:text-4xl">{categorias.length}</p>
-                  <p className="text-sm text-blue-200">Categorias</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-white md:text-4xl">5.0</p>
-                  <p className="text-sm text-blue-200">Avaliação média</p>
-                </div>
-              </div>
+              <Link to={createPageUrl('Buscar') + `?q=${busca}`}>
+                <Button className="h-14 w-full bg-blue-600 px-8 text-lg hover:bg-blue-700 sm:w-auto">
+                  <Search className="mr-2 h-5 w-5" />
+                  Buscar
+                </Button>
+              </Link>
             </div>
 
-            <div className="relative hidden min-h-[430px] overflow-hidden lg:block">
-              <div className="absolute left-[-2%] top-1/2 z-0 h-80 w-28 -translate-y-1/2 rounded-full bg-sky-300/22 blur-3xl" />
-              <img
-                src={homeHeroImage}
-                alt=""
-                aria-hidden="true"
-                className="absolute right-[-24%] top-1/2 z-10 w-[1080px] max-w-none -translate-y-[49%] object-contain opacity-[0.9] drop-shadow-[0_30px_90px_rgba(8,47,73,0.12)]"
-              />
-              <div className="absolute inset-0 z-20 bg-gradient-to-r from-blue-700 via-blue-700/18 to-transparent" />
-              <div className="absolute inset-y-0 left-0 z-30 w-48 bg-gradient-to-r from-blue-700 via-blue-700/95 via-blue-700/74 to-transparent" />
-              <div className="absolute inset-y-0 right-0 z-30 w-24 bg-gradient-to-l from-blue-700/72 via-blue-700/24 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 z-30 h-36 bg-gradient-to-t from-blue-700 via-blue-700/60 to-transparent" />
-              <div className="absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-blue-700/50 via-blue-700/18 to-transparent" />
-              <div className="absolute inset-0 z-30 bg-[radial-gradient(circle_at_28%_50%,_rgba(37,99,235,0.34),_transparent_22%),radial-gradient(circle_at_76%_54%,_rgba(37,99,235,0.16),_transparent_28%)]" />
+            <div className="mt-12 grid max-w-2xl grid-cols-3 gap-6">
+              <div>
+                <p className="text-3xl font-bold text-white md:text-4xl">{prestadores.length}+</p>
+                <p className="text-sm text-blue-200">Profissionais</p>
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-white md:text-4xl">{categorias.length}</p>
+                <p className="text-sm text-blue-200">Categorias</p>
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-white md:text-4xl">5.0</p>
+                <p className="text-sm text-blue-200">Avaliação média</p>
+              </div>
             </div>
           </div>
         </div>
